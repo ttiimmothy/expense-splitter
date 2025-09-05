@@ -57,7 +57,7 @@ class SocketService {
     }
   }
 
-  off(event: string, callback?: Function) {
+  off(event: string) {
     if (this.socket) {
       this.socket.off(event)
     }
