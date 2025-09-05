@@ -92,8 +92,8 @@ export default function GroupPage() {
 
       return () => {
         socketService.leaveGroup(id)
-        socketService.off('expense-created', onExpenseCreated)
-        socketService.off('expense-updated', onExpenseUpdated)
+        socketService.off('expense-created')
+        socketService.off('expense-updated')
       }
     }
   }, [id, refetchExpenses])
