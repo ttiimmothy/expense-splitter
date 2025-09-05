@@ -22,8 +22,9 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": ["vite/client", "vitest"]
+    "types": ["vite/client", "vitest", "node"]
   },
   "include": ["src"],
+  "exclude": ["**/*.test.*", "**/__tests__/**"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
