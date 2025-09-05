@@ -1,0 +1,95 @@
+import { Request, Response } from 'express';
+import { z } from 'zod';
+import { SettlementService } from '../services/settlements';
+
+const settlementService = new SettlementService();
+
+interface AuthRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+  };
+}
+
+const createSettlementSchema = z.object({
+  fromUserId: z.string(),
+  toUserId: z.string(),
+  amount: z.number().positive()
+});
+
+export const getGroupBalances = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { groupId } = req.params;
+    const balances = await settlementService.getGroupBalances(groupId, req.user.id);
+    const suggestions = await settlementService.getSettlementSuggestions(groupId, req.user.id);
+    
+    res.json({ 
+      balances,
+      suggestions
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Access denied') {
+      return res.status(403).json({ error: error.message });
+    }
+    
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const createSettlement = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { id: groupId } = req.params;
+    const data = createSettlementSchema.parse(req.body);
+    
+    const settlement = await settlementService.createSettlement(
+      groupId,
+      data.fromUserId,
+      data.toUserId,
+      data.amount,
+      req.user.id
+    );
+    
+    res.status(201).json({ settlement });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        error: 'Validation error',
+        details: error
+      });
+    }
+    
+    if (error instanceof Error && error.message === 'Access denied') {
+      return res.status(403).json({ error: error.message });
+    }
+    
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const getGroupSettlements = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { id: groupId } = req.params;
+    const settlements = await settlementService.getGroupSettlements(groupId, req.user.id);
+    
+    res.json({ settlements });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Access denied') {
+      return res.status(403).json({ error: error.message });
+    }
+    
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
