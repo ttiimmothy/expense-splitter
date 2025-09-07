@@ -89,6 +89,9 @@ export class GroupService {
       },
       include: {
         members: {
+          orderBy: {
+            user: {name: "asc"}
+          },
           include: {
             user: {
               select: {
@@ -96,7 +99,8 @@ export class GroupService {
                 name: true,
                 email: true,
                 avatarUrl: true
-              }
+              },
+             
             }
           }
         }

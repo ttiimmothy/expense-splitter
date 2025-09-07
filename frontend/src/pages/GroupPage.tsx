@@ -83,23 +83,17 @@ export default function GroupPage() {
       const onExpenseCreated = () => {
         refetchExpenses()
       }
-      
-      const onExpenseUpdated = () => {
-        refetchExpenses()
-      }
 
       const onGroupUpdated = () => {
         refetch()
       }
 
       socketService.onExpenseCreated(onExpenseCreated)
-      socketService.onExpenseUpdated(onExpenseUpdated)
       socketService.onGroupUpdated(onGroupUpdated)
 
       return () => {
         socketService.leaveGroup(id)
         socketService.off('expense-created', refetchExpenses)
-        socketService.off('expense-updated', refetchExpenses)
         socketService.off('group-updated', refetch)
       }
     }

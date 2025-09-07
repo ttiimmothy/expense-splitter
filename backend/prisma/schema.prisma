@@ -83,7 +83,7 @@ model ExpenseShare {
   userId    String
   amountPaid Decimal @db.Decimal(12, 2) @default(0)
 
-  // Relations
+  // Relations, onDelete: Cascade delete the related share data when one of the expenses is deleted
   expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id])
 

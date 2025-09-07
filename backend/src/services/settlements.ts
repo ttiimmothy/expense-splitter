@@ -1,3 +1,4 @@
+import {Expense, ExpenseShare, Prisma, User} from "@prisma/client";
 import { prisma } from '../db/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 
@@ -14,6 +15,12 @@ export interface SettlementSuggestion {
   toUserName: string;
   amount: number;
 }
+
+type ExpenseWithSharesAndUser =  Prisma.ExpenseGetPayload<{
+  include: {
+    shares: { include: { user: true } }
+  }
+}>
 
 export class SettlementService {
   async getGroupBalances(groupId: string, userId: string): Promise<Balance[]> {
@@ -34,6 +41,10 @@ export class SettlementService {
     // Get all group members
     const members = await prisma.groupMember.findMany({
       where: { groupId },
+      orderBy: {
+        user: {name: "asc"}
+        
+      },
       include: {
         user: {
           select: {
@@ -72,21 +83,14 @@ export class SettlementService {
     });
 
     // Calculate balances from expenses
-    expenses.forEach(expense => {
-      // const payerId = expense.payer.id;
-      // const paidAmount = Number(expense.amount);
-
-      // Payer gets credited for what they paid
-      // const payerBalance = balances.get(payerId);
-      // if (payerBalance) {
-      //   payerBalance.balance += paidAmount;
-      // }
-
-      // Each share holder gets debited for what they owe
+    expenses.forEach((expense: ExpenseWithSharesAndUser) => {
+      // Each share holder gets debited for what they pay
+      // .div still stay Decimal, need toNumber() for calculation
+      const average = Math.round(expense.amount.div(expense.shares.length).toNumber() * 100) / 100
       expense.shares.forEach(share => {
         const shareBalance = balances.get(share.user.id);
         if (shareBalance) {
-          shareBalance.balance += Number(share.amountPaid);
+          shareBalance.balance += Math.round(share.amountPaid.toNumber() * 100) / 100 - average;
         }
       });
     });
@@ -110,20 +114,11 @@ export class SettlementService {
       }
     }
 
-    let totalBalance = 0
-    for (const b of balances.values()) {
-      totalBalance += b.balance
-    }
-    const average = totalBalance / balances.size
-    for (const b of balances.values()) {
-      b.balance -= average
-    }
-
     // Convert to array format
     return Array.from(balances.entries()).map(([userId, data]) => ({
       userId,
       userName: data.name,
-      netBalance: data.balance
+      netBalance: Math.round(data.balance * 100) / 100
     }));
   }
 

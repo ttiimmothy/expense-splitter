@@ -22,7 +22,7 @@ const createExpenseSchema = z.object({
   split: z.enum(['EQUAL', 'CUSTOM']),
   shares: z.array(z.object({
     userId: z.string(),
-    amountPaid: z.number().positive()
+    amountPaid: z.number()
   })).optional()
 });
 
@@ -116,12 +116,13 @@ export const getExpense = async (req: Request, res: Response) => {
 export const updateExpenseShare = async (req: Request, res: Response) => {
   try {
     const {groupId, expenseId} = req.params
+    const {split, shares} = req.body
     await prisma.expense.update({
       where: {id: expenseId},
       data: {
-        split: req.body.splitType,
+        split,
         shares: {
-          update: req.body.shares.map((share) => ({
+          update: shares.map((share) => ({
             where: {expenseId_userId: {expenseId, userId: share.userId}},
             data: {amountPaid: new Decimal(share.amountPaid)}
           }))
@@ -131,6 +132,24 @@ export const updateExpenseShare = async (req: Request, res: Response) => {
     io.to(groupId).emit("expense-updated")
 
     res.json({message: "Expense split and shares update success"})
+  } catch (e) {
+    if (e instanceof Error && e.message === 'Access denied') {
+      return res.status(403).json({ error: e.message });
+    }
+    console.error(e)
+    
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+export const deleteExpense = async (req: Request, res: Response) => {
+  try {
+    const {groupId, expenseId} = req.params
+    await prisma.expense.delete({
+      where: {id: expenseId}
+    })
+    io.to(groupId).emit("expense-updated")
+    res.json({message: "expense delete success"})
   } catch (e) {
     if (e instanceof Error && e.message === 'Access denied') {
       return res.status(403).json({ error: e.message });
