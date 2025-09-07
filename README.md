@@ -88,25 +88,39 @@ The application comes with seeded demo data. You can log in with:
 
 ```
 expense_splitter/
-├── backend/                 # Node.js API server
+├── backend/                  # Node.js API server and database layer
+│   ├── docker-compose.yml    # Local dev services (Postgres, PgAdmin)
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── prisma/               # Prisma schema and migrations
+│   │   ├── schema.prisma
+│   │   └── migrations/
+│   └── src/
+│       ├── controllers/      # Route handlers
+│       ├── services/         # Business logic
+│       ├── middleware/       # Express middleware
+│       ├── db/               # Prisma client
+│       ├── types/
+│       ├── __tests__/        # Backend tests
+│       ├── index.ts          # App bootstrap
+│       ├── routes.ts         # Route registration
+│       └── io.ts             # Socket.IO setup
+├── frontend/                 # React application
+│   ├── Dockerfile
+│   ├── index.html
+│   ├── package.json
 │   ├── src/
-│   │   ├── controllers/    # Route handlers
-│   │   ├── services/       # Business logic
-│   │   ├── middleware/     # Express middleware
-│   │   ├── db/            # Database configuration
-│   │   └── __tests__/     # Backend tests
-│   ├── prisma/            # Database schema and migrations
-│   └── Dockerfile
-├── frontend/               # React application
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── pages/         # Page components
-│   │   ├── stores/        # State management
-│   │   ├── lib/           # Utilities and API client
-│   │   └── __tests__/     # Frontend tests
-│   └── Dockerfile
-├── docker-compose.yml      # Database and services
-└── .github/workflows/     # CI/CD configuration
+│   │   ├── components/       # UI components
+│   │   ├── pages/            # Page components
+│   │   ├── stores/           # Zustand stores
+│   │   ├── lib/              # API client and sockets
+│   │   ├── constants/
+│   │   └── __tests__/        # Frontend tests
+│   ├── vite.config.ts
+│   └── vercel.json           # Deployment config (if used)
+├── LICENSE
+├── README.md
+└── spec.txt
 ```
 
 ## API Endpoints

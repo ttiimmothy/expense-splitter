@@ -40,7 +40,7 @@ services:
     env_file:
       - .env
     ports:
-      - "3002:3001"
+      - "3001:3001"
     depends_on:
       - postgres
     # volumes likely delete for backend in production
