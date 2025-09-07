@@ -1,20 +1,11 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { ExpenseService } from '../services/expenses';
-import {prisma} from "@/db/prisma";
-import {ExpenseShare} from "@prisma/client";
+import {prisma} from "../db/prisma";
 import {Decimal} from "@prisma/client/runtime/library";
 import {io} from "..";
 
 const expenseService = new ExpenseService();
-
-interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-  };
-}
 
 const createExpenseSchema = z.object({
   description: z.string().min(1),
@@ -26,7 +17,7 @@ const createExpenseSchema = z.object({
   })).optional()
 });
 
-export const createExpense = async (req: AuthRequest, res: Response) => {
+export const createExpense = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
@@ -66,7 +57,7 @@ export const createExpense = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getGroupExpenses = async (req: AuthRequest, res: Response) => {
+export const getGroupExpenses = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });

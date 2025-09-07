@@ -1,17 +1,9 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { GroupService } from '../services/groups';
-import {prisma} from "@/db/prisma";
+import {prisma} from "../db/prisma";
 
 const groupService = new GroupService();
-
-interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-  };
-}
 
 const createGroupSchema = z.object({
   name: z.string().min(1),
@@ -22,7 +14,7 @@ const inviteMemberSchema = z.object({
   userEmail: z.email()
 });
 
-export const createGroup = async (req: AuthRequest, res: Response) => {
+export const createGroup = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
@@ -48,7 +40,7 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getUserGroups = async (req: AuthRequest, res: Response) => {
+export const getUserGroups = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
@@ -61,7 +53,7 @@ export const getUserGroups = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getGroupById = async (req: AuthRequest, res: Response) => {
+export const getGroupById = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
@@ -80,7 +72,7 @@ export const getGroupById = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const inviteMember = async (req: AuthRequest, res: Response) => {
+export const inviteMember = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });

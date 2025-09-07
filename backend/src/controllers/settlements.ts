@@ -5,21 +5,13 @@ import {io} from "..";
 
 const settlementService = new SettlementService();
 
-interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-  };
-}
-
 const createSettlementSchema = z.object({
   fromUserId: z.string(),
   toUserId: z.string(),
   amount: z.number().positive()
 });
 
-export const getGroupBalances = async (req: AuthRequest, res: Response) => {
+export const getGroupBalances = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
@@ -42,7 +34,7 @@ export const getGroupBalances = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const createSettlement = async (req: AuthRequest, res: Response) => {
+export const createSettlement = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });

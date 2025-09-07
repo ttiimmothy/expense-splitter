@@ -69,10 +69,7 @@ export default function GroupPage() {
       const response = await api.get(`/groups/${id}/expenses`)
       return response.data.expenses as Expense[]
     },
-    enabled: !!id,
-    retry: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,  
+    enabled: !!id
   })
 
   // Socket.IO setup

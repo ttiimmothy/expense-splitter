@@ -1,14 +1,20 @@
 services:
   postgres:
-    image: postgres:15-alpine
+    # moving tag that always points to the latest 17.x release with Alpine, now is 17.6 
+    image: postgres:17-alpine
     restart: always
     container_name: db
     environment:
       POSTGRES_DB: expense_splitter
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mysecretpassword
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myuser -d expense_splitter"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
   pgadmin:
@@ -21,7 +27,8 @@ services:
     ports:
       - "5050:80"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     volumes:
       - pgadmin_data:/var/lib/pgadmin
 
@@ -33,9 +40,15 @@ services:
     env_file:
       - .env
     ports:
-      - "3001:3001"
+      - "3002:3001"
     depends_on:
       - postgres
+    # volumes likely delete for backend in production
+    # volumes:
+      # this can help update the backend directly from the localhost, no need to rebuild the image every time you tweak code
+      # - .:/app
+      # kep a proper container-native node_modules, not to get shadowed by local node modules
+      # - /app/node_modules
     restart: unless-stopped
 
 volumes:

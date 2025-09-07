@@ -9,7 +9,8 @@ import './index.css'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,     // stop auto refetch on tab focus
+      refetchOnReconnect: false,       // stop auto refetch on network regain
       retry: 1,
     },
   },

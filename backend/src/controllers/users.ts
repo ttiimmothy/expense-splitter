@@ -3,15 +3,7 @@ import { UserService } from '../services/users';
 
 const userService = new UserService();
 
-interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-  };
-}
-
-export const getMe = async (req: AuthRequest, res: Response) => {
+export const getMe = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });

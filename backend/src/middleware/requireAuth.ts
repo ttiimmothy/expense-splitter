@@ -2,15 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../db/prisma';
 
-interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-  };
-}
-
-export const requireAuth = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = req.cookies.accessToken || req.headers.authorization?.replace('Bearer ', '');
     

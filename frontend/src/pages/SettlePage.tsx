@@ -37,10 +37,6 @@ export default function SettlePage() {
       }
     },
     enabled: !!id,
-    // ↓ tweak behavior so it doesn't keep spinning by itself
-    retry: false,                    // or a small number like 1 or 2
-    refetchOnWindowFocus: false,     // stop auto refetch on tab focus
-    refetchOnReconnect: false,       // stop auto refetch on network regain
   })
 
   useEffect(() => {

@@ -86,11 +86,11 @@ export class SettlementService {
     expenses.forEach((expense: ExpenseWithSharesAndUser) => {
       // Each share holder gets debited for what they pay
       // .div still stay Decimal, need toNumber() for calculation
-      const average = Math.round(expense.amount.div(expense.shares.length).toNumber() * 100) / 100
+      const average = Math.round(Number(expense.amount) / expense.shares.length * 100) / 100
       expense.shares.forEach(share => {
         const shareBalance = balances.get(share.user.id);
         if (shareBalance) {
-          shareBalance.balance += Math.round(share.amountPaid.toNumber() * 100) / 100 - average;
+          shareBalance.balance += Math.round(Number(share.amountPaid) * 100) / 100 - average;
         }
       });
     });
