@@ -35,21 +35,19 @@ describe('SettlementService', () => {
 
       const mockExpenses = [
         {
-          payer: { id: 'user1' },
           amount: 300,
           shares: [
-            { user: { id: 'user1' }, amountOwed: 100 },
-            { user: { id: 'user2' }, amountOwed: 100 },
-            { user: { id: 'user3' }, amountOwed: 100 },
+            { user: { id: 'user1' }, amountPaid: 100 },
+            { user: { id: 'user2' }, amountPaid: 100 },
+            { user: { id: 'user3' }, amountPaid: 100 },
           ],
         },
         {
-          payer: { id: 'user2' },
           amount: 150,
           shares: [
-            { user: { id: 'user1' }, amountOwed: 50 },
-            { user: { id: 'user2' }, amountOwed: 50 },
-            { user: { id: 'user3' }, amountOwed: 50 },
+            { user: { id: 'user1' }, amountPaid: 50 },
+            { user: { id: 'user2' }, amountPaid: 50 },
+            { user: { id: 'user3' }, amountPaid: 50 },
           ],
         },
       ]
@@ -61,9 +59,9 @@ describe('SettlementService', () => {
       const balances = await settlementService.getGroupBalances('group1', 'user1')
 
       expect(balances).toHaveLength(3)
-      expect(balances.find(b => b.userId === 'user1')?.netBalance).toBe(150) // Paid 300, owes 150
-      expect(balances.find(b => b.userId === 'user2')?.netBalance).toBe(0) // Paid 150, owes 150
-      expect(balances.find(b => b.userId === 'user3')?.netBalance).toBe(-150) // Paid 0, owes 150
+      expect(balances.find(b => b.userId === 'user1')?.netBalance).toBe(0)
+      expect(balances.find(b => b.userId === 'user2')?.netBalance).toBe(0)
+      expect(balances.find(b => b.userId === 'user3')?.netBalance).toBe(0)
     })
   })
 

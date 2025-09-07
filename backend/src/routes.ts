@@ -1,34 +1,35 @@
 import { Router } from 'express';
 import { requireAuth } from './middleware/requireAuth';
-import * as authController from './controllers/auth';
-import * as userController from './controllers/users';
-import * as groupController from './controllers/groups';
-import * as expenseController from './controllers/expenses';
-import * as settlementController from './controllers/settlements';
+import {login, logout, register} from "./controllers/auth";
+import {getMe} from "./controllers/users";
+import {createGroup, getGroupById, getUserGroups, inviteMember} from "./controllers/groups";
+import {createExpense, getExpense, getGroupExpenses} from "./controllers/expenses";
+import {createSettlement, getGroupBalances, getGroupSettlements} from "./controllers/settlements";
 
 const router = Router();
 
 // Auth routes (no auth required)
-router.post('/auth/login', authController.login);
-router.post('/auth/register', authController.register);
-router.post('/auth/logout', authController.logout);
+router.post('/auth/login', login);
+router.post('/auth/register', register);
+router.post('/auth/logout', logout);
 
 // User routes (auth required)
-router.get('/me', requireAuth, userController.getMe);
+router.get('/me', requireAuth, getMe);
 
 // Group routes (auth required)
-router.post('/groups', requireAuth, groupController.createGroup);
-router.get('/groups', requireAuth, groupController.getUserGroups);
-router.get('/groups/:id', requireAuth, groupController.getGroupById);
-router.post('/groups/:id/invite', requireAuth, groupController.inviteMember);
+router.post('/groups', requireAuth, createGroup);
+router.get('/groups', requireAuth, getUserGroups);
+router.get('/groups/:id', requireAuth, getGroupById);
+router.post('/groups/:id/invite', requireAuth, inviteMember);
 
 // Expense routes (auth required)
-router.post('/groups/:id/expenses', requireAuth, expenseController.createExpense);
-router.get('/groups/:id/expenses', requireAuth, expenseController.getGroupExpenses);
+router.post('/groups/:id/expenses', requireAuth, createExpense);
+router.get('/groups/:id/expenses', requireAuth, getGroupExpenses);
+router.get('/groups/:id/expenses/:expenseId', requireAuth, getExpense);
 
 // Settlement routes (auth required)
-router.get('/balances/:groupId', requireAuth, settlementController.getGroupBalances);
-router.post('/groups/:id/settlements', requireAuth, settlementController.createSettlement);
-router.get('/groups/:id/settlements', requireAuth, settlementController.getGroupSettlements);
+router.get('/balances/:groupId', requireAuth, getGroupBalances);
+router.post('/groups/:id/settlements', requireAuth, createSettlement);
+router.get('/groups/:id/settlements', requireAuth, getGroupSettlements);
 
 export default router;

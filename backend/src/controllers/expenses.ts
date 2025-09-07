@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { ExpenseService } from '../services/expenses';
+import {prisma} from "@/db/prisma";
 
 const expenseService = new ExpenseService();
 
@@ -35,7 +36,6 @@ export const createExpense = async (req: AuthRequest, res: Response) => {
     const expense = await expenseService.createExpense({
       ...data,
       groupId,
-      payerId: req.user.id
     });
     
     res.status(201).json({ expense });
@@ -78,3 +78,32 @@ export const getGroupExpenses = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+export const getExpense = async (req: Request, res: Response) => {
+  try {
+    const {id: groupId, expenseId} = req.params
+    const expense = await prisma.expense.findUnique({
+      where: {id: expenseId},
+      include: {
+        shares: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        }
+      }
+    })
+    res.json(expense)
+  } catch (e) {
+    if (e instanceof Error && e.message === 'Access denied') {
+      return res.status(403).json({ error: e.message });
+    }
+    
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}

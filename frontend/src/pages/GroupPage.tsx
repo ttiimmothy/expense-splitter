@@ -1,11 +1,11 @@
 import { useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useState, useEffect } from 'react'
 import { socketService } from '../lib/socket'
 import { Plus, Users, DollarSign, ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import ExpenseForm from '../components/ExpenseForm'
+import CreateExpenseModal from '../components/CreateExpenseModal'
 import ExpenseTable from '../components/ExpenseTable'
 import InviteMemberModal from '../components/InviteMemberModal'
 import {cardDarkMode, cardTextDarkMode} from "@/constants/colors";
@@ -52,8 +52,9 @@ export default function GroupPage() {
   const { id } = useParams<{ id: string }>()
   const [showExpenseForm, setShowExpenseForm] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const queryClient = useQueryClient()
 
-  const { data: group, isLoading: groupLoading } = useQuery({
+  const { data: group, isLoading: groupLoading, refetch } = useQuery({
     queryKey: ['group', id],
     queryFn: async () => {
       const response = await api.get(`/groups/${id}`)
@@ -112,9 +113,9 @@ export default function GroupPage() {
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">Group not found</h3>
         <div className="mt-1 text-gray-500 dark:text-gray-300">The group you're looking for doesn't exist.</div>
         <div className="mt-4">
-        <Link to="/" className="btn btn-primary">
-          {/* <ArrowLeft className="h-4 w-4 mr-2" /> */}
-          Back to Dashboard
+        <Link to="/" className="btn btn-primary inline-flex items-center">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
         </Link>
         </div>
       </div>
@@ -160,7 +161,7 @@ export default function GroupPage() {
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
               </div>
             ) : expenses && expenses.length > 0 ? (
-              <ExpenseTable expenses={expenses} />
+              <ExpenseTable expenses={expenses} groupId={id!} />
             ) : (
               <div className="text-center py-8">
                 <DollarSign className="h-8 w-8 text-gray-400 mx-auto mb-2" />
@@ -198,6 +199,7 @@ export default function GroupPage() {
               <Link
                 to={`/groups/${id}/settle`}
                 className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                onClick={()=>{queryClient.invalidateQueries({queryKey:["balances"]})}}
               >
                 View Balances & Settle
               </Link>
@@ -212,7 +214,7 @@ export default function GroupPage() {
         </div>
       </div>
 
-      <ExpenseForm
+      <CreateExpenseModal
         isOpen={showExpenseForm}
         onClose={() => setShowExpenseForm(false)}
         groupId={id!}
@@ -230,7 +232,8 @@ export default function GroupPage() {
         onSuccess={() => {
           setShowInviteModal(false)
           // Refetch group data to update members
-          window.location.reload()
+          refetch()
+          // window.location.reload()
         }}
       />
     </div>

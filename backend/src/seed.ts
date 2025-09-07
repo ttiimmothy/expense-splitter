@@ -62,15 +62,14 @@ async function main() {
   const expense1 = await prisma.expense.create({
     data: {
       groupId: group.id,
-      payerId: user1.id,
       description: 'Flight tickets',
       amount: 1200.00,
       split: 'EQUAL',
       shares: {
         create: [
-          { userId: user1.id, amountOwed: 400.00 },
-          { userId: user2.id, amountOwed: 400.00 },
-          { userId: user3.id, amountOwed: 400.00 }
+          { userId: user1.id, amountPaid: 400.00 },
+          { userId: user2.id, amountPaid: 400.00 },
+          { userId: user3.id, amountPaid: 400.00 }
         ]
       }
     }
@@ -79,15 +78,14 @@ async function main() {
   const expense2 = await prisma.expense.create({
     data: {
       groupId: group.id,
-      payerId: user2.id,
       description: 'Hotel accommodation',
       amount: 900.00,
       split: 'EQUAL',
       shares: {
         create: [
-          { userId: user1.id, amountOwed: 300.00 },
-          { userId: user2.id, amountOwed: 300.00 },
-          { userId: user3.id, amountOwed: 300.00 }
+          { userId: user1.id, amountPaid: 300.00 },
+          { userId: user2.id, amountPaid: 300.00 },
+          { userId: user3.id, amountPaid: 300.00 }
         ]
       }
     }
@@ -96,15 +94,14 @@ async function main() {
   const expense3 = await prisma.expense.create({
     data: {
       groupId: group.id,
-      payerId: user3.id,
       description: 'Dinner at fancy restaurant',
       amount: 150.00,
       split: 'CUSTOM',
       shares: {
         create: [
-          { userId: user1.id, amountOwed: 50.00 },
-          { userId: user2.id, amountOwed: 50.00 },
-          { userId: user3.id, amountOwed: 50.00 }
+          { userId: user1.id, amountPaid: 50.00 },
+          { userId: user2.id, amountPaid: 50.00 },
+          { userId: user3.id, amountPaid: 50.00 }
         ]
       }
     }

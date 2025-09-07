@@ -3,7 +3,6 @@ import { Decimal } from '@prisma/client/runtime/library';
 
 export interface CreateExpenseData {
   groupId: string;
-  payerId: string;
   description: string;
   amount: number;
   split: 'EQUAL' | 'CUSTOM';
@@ -15,7 +14,7 @@ export interface CreateExpenseData {
 
 export class ExpenseService {
   async createExpense(data: CreateExpenseData) {
-    const { groupId, payerId, description, amount, split, shares } = data;
+    const { groupId, description, amount, split, shares } = data;
 
     // Get group members
     const groupMembers = await prisma.groupMember.findMany({
@@ -53,7 +52,6 @@ export class ExpenseService {
     const expense = await prisma.expense.create({
       data: {
         groupId,
-        payerId,
         description,
         amount: new Decimal(amount),
         split,
@@ -65,13 +63,6 @@ export class ExpenseService {
         }
       },
       include: {
-        payer: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
         shares: {
           include: {
             user: {
@@ -107,13 +98,6 @@ export class ExpenseService {
     return prisma.expense.findMany({
       where: { groupId },
       include: {
-        payer: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
         shares: {
           include: {
             user: {

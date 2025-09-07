@@ -37,22 +37,33 @@ A full-stack application for splitting expenses with friends and family. Built w
 ## Quick Start
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 22
 - Docker and Docker Compose
 - Git
 
 ### 1. Clone the repository
 ```bash
-git clone <repository-url>
-cd expense_splitter
+git clone https://github.com:ttiimmothy/expense-splitter
+cd expense-splitter
 ```
 
-### 2. Start the database
+### 2. Quick start
+
+#### 1. Start the backend and database
 ```bash
-docker compose up -d postgres
+cd backend && docker compose up -d
 ```
 
-### 3. Set up the backend
+#### 2. Go to the public frontend link (deployed on Vercel)
+
+### 3. For development
+
+#### 1. Start the database
+```bash
+cd backend && docker compose up -d postgres
+```
+
+#### 2. Set up the backend
 ```bash
 cd backend
 npm install
@@ -63,7 +74,7 @@ npm run prisma:seed
 npm run dev
 ```
 
-### 4. Set up the frontend
+#### 3. Set up the frontend
 ```bash
 cd frontend
 npm install
@@ -72,7 +83,7 @@ cp .
 npm run dev
 ```
 
-### 5. Access the application
+#### 4. Access the application
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:3001
 - Database: localhost:5432
@@ -195,7 +206,7 @@ docker compose logs -f
 # Backend
 cd backend
 docker build -t backend .
-
+```
 ## Environment Variables
 
 ### Backend (.env)
@@ -206,7 +217,6 @@ PORT=3001
 CLIENT_URL="http://localhost:5173"
 CORS_ORIGIN="http://localhost:5173"
 ```
-
 ### Frontend (.env)
 ```env
 VITE_API_URL=http://localhost:3001/api

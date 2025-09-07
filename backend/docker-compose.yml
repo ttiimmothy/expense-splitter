@@ -4,7 +4,7 @@ services:
   postgres:
     image: postgres:15-alpine
     restart: always
-    container_name: expense_splitter_db
+    container_name: db
     environment:
       POSTGRES_DB: expense_splitter
       POSTGRES_USER: myuser
@@ -16,7 +16,7 @@ services:
   pgadmin:
     image: dpage/pgadmin4:latest
     restart: always
-    container_name: expense_splitter_pgadmin
+    container_name: pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
@@ -31,14 +31,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: expense_splitter_backend
+    container_name: backend
     env_file:
       - .env
     ports:
       - "3001:3001"
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
     restart: unless-stopped
 
 volumes:

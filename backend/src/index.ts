@@ -1,9 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
-import rateLimit from 'express-rate-limit';
 import { createServer } from 'http';
 import dotenv from 'dotenv';
 
@@ -27,7 +25,7 @@ app.use(helmet());
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: 'http://localhost:5173',
   credentials: true
 }));
 
@@ -55,7 +53,7 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = 3001;
 
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

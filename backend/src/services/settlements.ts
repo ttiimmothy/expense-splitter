@@ -48,11 +48,6 @@ export class SettlementService {
     const expenses = await prisma.expense.findMany({
       where: { groupId },
       include: {
-        payer: {
-          select: {
-            id: true
-          }
-        },
         shares: {
           include: {
             user: {
@@ -78,20 +73,20 @@ export class SettlementService {
 
     // Calculate balances from expenses
     expenses.forEach(expense => {
-      const payerId = expense.payer.id;
-      const paidAmount = Number(expense.amount);
+      // const payerId = expense.payer.id;
+      // const paidAmount = Number(expense.amount);
 
       // Payer gets credited for what they paid
-      const payerBalance = balances.get(payerId);
-      if (payerBalance) {
-        payerBalance.balance += paidAmount;
-      }
+      // const payerBalance = balances.get(payerId);
+      // if (payerBalance) {
+      //   payerBalance.balance += paidAmount;
+      // }
 
       // Each share holder gets debited for what they owe
       expense.shares.forEach(share => {
         const shareBalance = balances.get(share.user.id);
         if (shareBalance) {
-          shareBalance.balance -= Number(share.amountOwed);
+          shareBalance.balance += Number(share.amountPaid);
         }
       });
     });
@@ -113,6 +108,15 @@ export class SettlementService {
         // To user received, so their positive balance decreases toward zero
         if (toB) toB.balance -= amt;
       }
+    }
+
+    let totalBalance = 0
+    for (const b of balances.values()) {
+      totalBalance += b.balance
+    }
+    const average = totalBalance / balances.size
+    for (const b of balances.values()) {
+      b.balance -= average
     }
 
     // Convert to array format

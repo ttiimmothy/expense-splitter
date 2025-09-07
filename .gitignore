@@ -107,5 +107,6 @@ Thumbs.db
 # Prisma
 prisma/migrations/
 prd.txt
+spec.txt
 frontend/Dockerfile
 nginx*

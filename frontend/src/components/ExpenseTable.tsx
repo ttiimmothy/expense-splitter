@@ -1,6 +1,7 @@
 import {cardDarkMode, cardTextDarkMode} from "@/constants/colors";
 import dayjs from 'dayjs'
 import { DollarSign, Users } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 interface Expense {
   id: string
@@ -26,9 +27,15 @@ interface Expense {
 
 interface ExpenseTableProps {
   expenses: Expense[]
+  groupId: string
 }
 
-export default function ExpenseTable({ expenses }: ExpenseTableProps) {
+export default function ExpenseTable({ expenses, groupId }: ExpenseTableProps) {
+  const navigate = useNavigate()
+
+  const handleRowClick = (expenseId: string) => {
+    navigate(`/groups/${groupId}/expenses/${expenseId}`)
+  }
   if (expenses.length === 0) {
     return (
       <div className="text-center py-8">
@@ -49,9 +56,6 @@ export default function ExpenseTable({ expenses }: ExpenseTableProps) {
                 Description
               </th>
               <th className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${cardTextDarkMode}`}>
-                Paid By
-              </th>
-              <th className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${cardTextDarkMode}`}>
                 Amount
               </th>
               <th className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${cardTextDarkMode}`}>
@@ -64,19 +68,13 @@ export default function ExpenseTable({ expenses }: ExpenseTableProps) {
           </thead>
           <tbody className={`bg-white divide-y divide-gray-200 ${cardDarkMode}`}>
             {expenses.map((expense) => (
-              <tr key={expense.id} className="hover:bg-gray-50">
+              <tr 
+                key={expense.id} 
+                className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                onClick={() => handleRowClick(expense.id)}
+              >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">{expense.description}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="h-6 w-6 rounded-full bg-primary-100 flex items-center justify-center mr-2">
-                      <span className="text-xs font-medium text-primary-600">
-                        {expense.payer.name.charAt(0)}
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-900">{expense.payer.name}</div>
-                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-semibold text-gray-900">${(typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount || 0).toFixed(2)}</div>

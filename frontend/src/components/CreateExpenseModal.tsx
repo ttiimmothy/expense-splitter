@@ -33,7 +33,7 @@ interface ExpenseFormData {
   }>
 }
 
-export default function ExpenseForm({ isOpen, onClose, onSuccess, groupId, groupMembers }: ExpenseFormProps) {
+export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId, groupMembers }: ExpenseFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [splitType, setSplitType] = useState<'EQUAL' | 'CUSTOM'>('EQUAL')
   const queryClient = useQueryClient()
@@ -201,7 +201,7 @@ export default function ExpenseForm({ isOpen, onClose, onSuccess, groupId, group
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="text-sm font-medium text-gray-900 mb-2">Equal Split Preview</h4>
                   <p className="text-sm text-gray-600">
-                    Each person owes: <span className="font-semibold">${(watchedAmount / groupMembers.length).toFixed(2)}</span>
+                    Each person pays: <span className="font-semibold">${(watchedAmount / groupMembers.length).toFixed(2)}</span>
                   </p>
                 </div>
               )}

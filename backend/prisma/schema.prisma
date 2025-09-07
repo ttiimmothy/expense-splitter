@@ -22,7 +22,7 @@ model User {
 
   // Relations
   groupMemberships GroupMember[]
-  expensesPaid    Expense[]
+  // expensesPaid    Expense[]
   expenseShares   ExpenseShare[]
   settlementsFrom Settlement[] @relation("SettlementFrom")
   settlementsTo   Settlement[] @relation("SettlementTo")
@@ -62,7 +62,7 @@ model GroupMember {
 model Expense {
   id          String      @id @default(uuid())
   groupId     String
-  payerId     String
+  // payerId     String
   description String
   amount      Decimal     @db.Decimal(12, 2)
   split       SplitType   @default(EQUAL)
@@ -71,7 +71,7 @@ model Expense {
 
   // Relations
   group       Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  payer       User          @relation(fields: [payerId], references: [id])
+  // payer       User          @relation(fields: [payerId], references: [id])
   shares      ExpenseShare[]
 
   @@map("expenses")
@@ -81,7 +81,7 @@ model ExpenseShare {
   id        String  @id @default(uuid())
   expenseId String
   userId    String
-  amountOwed Decimal @db.Decimal(12, 2)
+  amountPaid Decimal @db.Decimal(12, 2) @default(0)
 
   // Relations
   expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
