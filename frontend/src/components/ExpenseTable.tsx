@@ -16,7 +16,7 @@ interface Expense {
   }
   shares: Array<{
     id: string
-    amountOwed: number
+    amountPaid: number
     user: {
       id: string
       name: string

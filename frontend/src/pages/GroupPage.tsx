@@ -39,7 +39,7 @@ interface Expense {
   }
   shares: Array<{
     id: string
-    amountOwed: number
+    amountPaid: number
     user: {
       id: string
       name: string
@@ -88,16 +88,22 @@ export default function GroupPage() {
         refetchExpenses()
       }
 
+      const onGroupUpdated = () => {
+        refetch()
+      }
+
       socketService.onExpenseCreated(onExpenseCreated)
       socketService.onExpenseUpdated(onExpenseUpdated)
+      socketService.onGroupUpdated(onGroupUpdated)
 
       return () => {
         socketService.leaveGroup(id)
-        socketService.off('expense-created')
-        socketService.off('expense-updated')
+        socketService.off('expense-created', refetchExpenses)
+        socketService.off('expense-updated', refetchExpenses)
+        socketService.off('group-updated', refetch)
       }
     }
-  }, [id, refetchExpenses])
+  }, [id, refetchExpenses, refetch])
 
   if (groupLoading) {
     return (

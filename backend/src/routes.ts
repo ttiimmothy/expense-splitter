@@ -4,7 +4,7 @@ import {login, logout, register} from "./controllers/auth";
 import {getMe} from "./controllers/users";
 import {createGroup, findAvailableUsersEmail, getGroupById, getUserGroups, inviteMember} from "./controllers/groups";
 import {createExpense, getExpense, getGroupExpenses, updateExpenseShare} from "./controllers/expenses";
-import {createSettlement, getGroupBalances, getGroupSettlements} from "./controllers/settlements";
+import {createSettlement, getGroupBalances} from "./controllers/settlements";
 
 const router = Router();
 
@@ -32,6 +32,5 @@ router.put("/groups/:groupId/expenses/:expenseId/split", requireAuth, updateExpe
 // Settlement routes (auth required)
 router.get('/balances/:groupId', requireAuth, getGroupBalances);
 router.post('/groups/:id/settlements', requireAuth, createSettlement);
-router.get('/groups/:id/settlements', requireAuth, getGroupSettlements);
 
 export default router;

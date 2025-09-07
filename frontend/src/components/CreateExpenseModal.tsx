@@ -29,7 +29,7 @@ interface ExpenseFormData {
   split: 'EQUAL' | 'CUSTOM'
   shares: Array<{
     userId: string
-    amountOwed: number
+    amountPaid: number
   }>
 }
 
@@ -71,7 +71,7 @@ export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId
         const amountPerPerson = data.amount / groupMembers.length
         data.shares = groupMembers.map(member => ({
           userId: member.user.id,
-          amountOwed: amountPerPerson
+          amountPaid: amountPerPerson
         }))
       }
 
@@ -93,17 +93,17 @@ export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId
     
     if (existingIndex >= 0) {
       const newShares = [...currentShares]
-      newShares[existingIndex] = { userId, amountOwed: amount }
+      newShares[existingIndex] = { userId, amountPaid: amount }
       setValue('shares', newShares)
     } else {
-      setValue('shares', [...currentShares, { userId, amountOwed: amount }])
+      setValue('shares', [...currentShares, { userId, amountPaid: amount }])
     }
   }
 
   const getCustomShare = (userId: string) => {
     const shares = watch('shares') || []
     const share = shares.find(s => s.userId === userId)
-    return share?.amountOwed || 0
+    return share?.amountPaid || 0
   }
 
   const calculateTotal = () => {

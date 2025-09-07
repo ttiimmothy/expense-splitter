@@ -15,7 +15,7 @@ const app = express();
 const server = createServer(app);
 
 // Initialize Socket.IO
-const io = initializeSocketIO(server);
+export const io = initializeSocketIO(server);
 
 // Make io available globally for controllers
 app.set('io', io);

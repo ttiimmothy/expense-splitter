@@ -4,6 +4,7 @@ import { ExpenseService } from '../services/expenses';
 import {prisma} from "@/db/prisma";
 import {ExpenseShare} from "@prisma/client";
 import {Decimal} from "@prisma/client/runtime/library";
+import {io} from "..";
 
 const expenseService = new ExpenseService();
 
@@ -32,13 +33,16 @@ export const createExpense = async (req: AuthRequest, res: Response) => {
     }
 
     const { id: groupId } = req.params;
+
     const parsedBody = {...req.body, amount: parseFloat(req.body.amount), shares: req.body.shares.map((share) => ({...share, amountPaid: parseFloat(share.amountPaid)}))}
+
     const data = createExpenseSchema.parse(parsedBody);
     
     const expense = await expenseService.createExpense({
       ...data,
       groupId,
     });
+    io.to(groupId).emit("expense-created")
     
     res.status(201).json({ expense });
   } catch (error) {
@@ -70,7 +74,6 @@ export const getGroupExpenses = async (req: AuthRequest, res: Response) => {
 
     const { id: groupId } = req.params;
     const expenses = await expenseService.getGroupExpenses(groupId, req.user.id);
-    console.log(expenses.map(expense => expense.shares))
     res.json({ expenses });
   } catch (error) {
     if (error instanceof Error && error.message === 'Access denied') {
@@ -112,7 +115,7 @@ export const getExpense = async (req: Request, res: Response) => {
 
 export const updateExpenseShare = async (req: Request, res: Response) => {
   try {
-    const {expenseId} = req.params
+    const {groupId, expenseId} = req.params
     await prisma.expense.update({
       where: {id: expenseId},
       data: {
@@ -125,6 +128,7 @@ export const updateExpenseShare = async (req: Request, res: Response) => {
         }
       }
     })
+    io.to(groupId).emit("expense-updated")
 
     res.json({message: "Expense split and shares update success"})
   } catch (e) {

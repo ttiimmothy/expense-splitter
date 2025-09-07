@@ -121,7 +121,7 @@ export const findAvailableUsersEmail = async (req: Request, res: Response) => {
   try {
     const {groupId} = req.params
     const {search} = req.query
-    console.log(search)
+
     const group = await prisma.group.findUnique({
       where: {id: groupId},
       include: {

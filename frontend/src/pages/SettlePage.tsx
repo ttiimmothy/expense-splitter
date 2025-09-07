@@ -1,12 +1,13 @@
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowLeft, CheckCircle, DollarSign } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import BalanceChart from '../components/BalanceChart'
 import SettlementSuggestions from '../components/SettlementSuggestions'
 import {cardDarkMode, cardTextDarkMode} from "@/constants/colors";
+import {socketService} from "@/lib/socket";
 
 interface Balance {
   userId: string
@@ -41,6 +42,23 @@ export default function SettlePage() {
     refetchOnWindowFocus: false,     // stop auto refetch on tab focus
     refetchOnReconnect: false,       // stop auto refetch on network regain
   })
+
+  useEffect(() => {
+    if (id) {
+      socketService.joinGroup(id)
+      
+      const onSettlementCreated = () => {
+        refetch()
+      }
+
+      socketService.onSettlementCreated(onSettlementCreated)
+
+      return () => {
+        socketService.leaveGroup(id)
+        socketService.off('settlement-created', onSettlementCreated)
+      }
+    }
+  }, [id, refetch])
 
   if (isLoading) {
     return (
