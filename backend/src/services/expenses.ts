@@ -8,7 +8,7 @@ export interface CreateExpenseData {
   split: 'EQUAL' | 'CUSTOM';
   shares?: Array<{
     userId: string;
-    amountOwed: number;
+    amountPaid: number;
   }>;
 }
 
@@ -34,13 +34,13 @@ export class ExpenseService {
     }
 
     // Calculate shares
-    let expenseShares: Array<{ userId: string; amountOwed: number }> = [];
+    let expenseShares: Array<{ userId: string; amountPaid: number }> = [];
 
     if (split === 'EQUAL') {
       const amountPerPerson = amount / groupMembers.length;
       expenseShares = groupMembers.map(member => ({
         userId: member.user.id,
-        amountOwed: amountPerPerson
+        amountPaid: amountPerPerson
       }));
     } else if (split === 'CUSTOM' && shares) {
       expenseShares = shares;
@@ -58,7 +58,7 @@ export class ExpenseService {
         shares: {
           create: expenseShares.map(share => ({
             userId: share.userId,
-            amountOwed: new Decimal(share.amountOwed)
+            amountPaid: new Decimal(share.amountPaid)
           }))
         }
       },

@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { ExpenseService } from '../services/expenses';
 import {prisma} from "@/db/prisma";
+import {ExpenseShare} from "@prisma/client";
+import {Decimal} from "@prisma/client/runtime/library";
 
 const expenseService = new ExpenseService();
 
@@ -19,7 +21,7 @@ const createExpenseSchema = z.object({
   split: z.enum(['EQUAL', 'CUSTOM']),
   shares: z.array(z.object({
     userId: z.string(),
-    amountOwed: z.number().positive()
+    amountPaid: z.number().positive()
   })).optional()
 });
 
@@ -30,7 +32,7 @@ export const createExpense = async (req: AuthRequest, res: Response) => {
     }
 
     const { id: groupId } = req.params;
-    const parsedBody = {...req.body, amount: parseFloat(req.body.amount), shares: req.body.shares.map((share) => ({...share, amountOwed: parseFloat(share.amountOwed)}))}
+    const parsedBody = {...req.body, amount: parseFloat(req.body.amount), shares: req.body.shares.map((share) => ({...share, amountPaid: parseFloat(share.amountPaid)}))}
     const data = createExpenseSchema.parse(parsedBody);
     
     const expense = await expenseService.createExpense({
@@ -68,7 +70,7 @@ export const getGroupExpenses = async (req: AuthRequest, res: Response) => {
 
     const { id: groupId } = req.params;
     const expenses = await expenseService.getGroupExpenses(groupId, req.user.id);
-    
+    console.log(expenses.map(expense => expense.shares))
     res.json({ expenses });
   } catch (error) {
     if (error instanceof Error && error.message === 'Access denied') {
@@ -81,7 +83,7 @@ export const getGroupExpenses = async (req: AuthRequest, res: Response) => {
 
 export const getExpense = async (req: Request, res: Response) => {
   try {
-    const {id: groupId, expenseId} = req.params
+    const {expenseId} = req.params
     const expense = await prisma.expense.findUnique({
       where: {id: expenseId},
       include: {
@@ -103,6 +105,33 @@ export const getExpense = async (req: Request, res: Response) => {
     if (e instanceof Error && e.message === 'Access denied') {
       return res.status(403).json({ error: e.message });
     }
+    
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+export const updateExpenseShare = async (req: Request, res: Response) => {
+  try {
+    const {expenseId} = req.params
+    await prisma.expense.update({
+      where: {id: expenseId},
+      data: {
+        split: req.body.splitType,
+        shares: {
+          update: req.body.shares.map((share) => ({
+            where: {expenseId_userId: {expenseId, userId: share.userId}},
+            data: {amountPaid: new Decimal(share.amountPaid)}
+          }))
+        }
+      }
+    })
+
+    res.json({message: "Expense split and shares update success"})
+  } catch (e) {
+    if (e instanceof Error && e.message === 'Access denied') {
+      return res.status(403).json({ error: e.message });
+    }
+    console.error(e)
     
     res.status(500).json({ error: 'Internal server error' });
   }

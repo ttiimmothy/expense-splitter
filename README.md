@@ -34,8 +34,6 @@ A full-stack application for splitting expenses with friends and family. Built w
 - **Recharts** for data visualization
 - **Vitest** for testing
 
-## Quick Start
-
 ### Prerequisites
 - Node.js 22
 - Docker and Docker Compose
@@ -47,16 +45,7 @@ git clone https://github.com:ttiimmothy/expense-splitter
 cd expense-splitter
 ```
 
-### 2. Quick start
-
-#### 1. Start the backend and database
-```bash
-cd backend && docker compose up -d
-```
-
-#### 2. Go to the public frontend link (deployed on Vercel)
-
-### 3. For development
+### 2. For development
 
 #### 1. Start the database
 ```bash

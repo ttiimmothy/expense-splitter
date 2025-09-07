@@ -5,7 +5,6 @@ import { ArrowLeft, DollarSign, Users, Calendar, User, Receipt, Edit3 } from 'lu
 import { cardDarkMode, cardTextDarkMode } from '@/constants/colors'
 import dayjs from 'dayjs'
 import { useState } from 'react'
-import ChangePayerSidebar from '../components/ChangePayerSidebar'
 import ChangeSplitSidebar from '../components/ChangeSplitSidebar'
 
 interface Expense {
@@ -21,7 +20,7 @@ interface Expense {
   }
   shares: Array<{
     id: string
-    amountOwed: number
+    amountPaid: number
     user: {
       id: string
       name: string
@@ -48,8 +47,6 @@ interface Group {
 
 export default function ExpenseDetailsPage() {
   const { groupId, expenseId } = useParams<{ groupId: string; expenseId: string }>()
-  const [showPayerSidebar, setShowPayerSidebar] = useState(false)
-  const [isUpdatingPayer, setIsUpdatingPayer] = useState(false)
   const [showSplitSidebar, setShowSplitSidebar] = useState(false)
   const [isUpdatingSplit, setIsUpdatingSplit] = useState(false)
   const queryClient = useQueryClient()
@@ -72,46 +69,7 @@ export default function ExpenseDetailsPage() {
     enabled: !!groupId
   })
 
-  const handlePayerChange = async (newPayerId: string) => {
-    if (!expense || !groupId || !expenseId) return
-
-    setIsUpdatingPayer(true)
-    try {
-      // Optimistic update
-      queryClient.setQueryData(['expense', expenseId], (oldData: Expense | undefined) => {
-        if (!oldData) return oldData
-        
-        const newPayer = group?.members.find(m => m.user.id === newPayerId)?.user
-        if (!newPayer) return oldData
-
-        return {
-          ...oldData,
-          payer: {
-            id: newPayer.id,
-            name: newPayer.name,
-            email: newPayer.email
-          }
-        }
-      })
-
-      // API call
-      await api.put(`/groups/${groupId}/expenses/${expenseId}/payer`, {
-        payerId: newPayerId
-      })
-
-      // Refetch to ensure data consistency
-      await queryClient.invalidateQueries({ queryKey: ['expense', expenseId] })
-      await queryClient.invalidateQueries({ queryKey: ['expenses', groupId] })
-    } catch (error) {
-      console.error('Failed to update payer:', error)
-      // Revert optimistic update on error
-      await queryClient.invalidateQueries({ queryKey: ['expense', expenseId] })
-    } finally {
-      setIsUpdatingPayer(false)
-    }
-  }
-
-  const handleSplitChange = async (newShares: { userId: string; amount: number }[]) => {
+  const handleSplitChange = async (splitType: string, newShares: { userId: string; amountPaid: number }[]) => {
     if (!expense || !groupId || !expenseId) return
 
     setIsUpdatingSplit(true)
@@ -126,7 +84,7 @@ export default function ExpenseDetailsPage() {
 
           return {
             id: `temp-${share.userId}`, // Temporary ID for optimistic update
-            amountOwed: share.amount,
+            amountPaid: share.amountPaid,
             user: {
               id: user.id,
               name: user.name,
@@ -137,12 +95,14 @@ export default function ExpenseDetailsPage() {
 
         return {
           ...oldData,
+          split: splitType,
           shares: updatedShares
         }
       })
 
       // API call
       await api.put(`/groups/${groupId}/expenses/${expenseId}/split`, {
+        split: splitType,
         shares: newShares
       })
 
@@ -260,10 +220,10 @@ export default function ExpenseDetailsPage() {
                   </div>
                   <div className="text-right">
                     <div className="font-semibold text-gray-900 dark:text-white">
-                      ${(typeof share.amountOwed === 'string' ? parseFloat(share.amountOwed) : share.amountOwed || 0).toFixed(2)}
+                      ${(typeof share.amountPaid === 'string' ? parseFloat(share.amountPaid) : share.amountPaid || 0).toFixed(2)}
                     </div>
                     <div className={`text-xs text-gray-500 ${cardTextDarkMode}`}>
-                      {((typeof share.amountOwed === 'string' && typeof expense.amount === 'string' ? (parseFloat(share.amountOwed) / parseFloat(expense.amount)) : share.amountOwed / expense.amount || 0) * 100).toFixed(1)}%
+                      {((typeof share.amountPaid === 'string' && typeof expense.amount === 'string' ? (parseFloat(share.amountPaid) / parseFloat(expense.amount)) : share.amountPaid / expense.amount || 0) * 100).toFixed(1)}%
                     </div>
                   </div>
                 </div>

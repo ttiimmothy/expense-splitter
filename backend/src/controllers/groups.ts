@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { GroupService } from '../services/groups';
+import {prisma} from "@/db/prisma";
 
 const groupService = new GroupService();
 
@@ -18,7 +19,7 @@ const createGroupSchema = z.object({
 });
 
 const inviteMemberSchema = z.object({
-  userEmail: z.string().email()
+  userEmail: z.email()
 });
 
 export const createGroup = async (req: AuthRequest, res: Response) => {
@@ -115,3 +116,56 @@ export const inviteMember = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+export const findAvailableUsersEmail = async (req: Request, res: Response) => {
+  try {
+    const {groupId} = req.params
+    const {search} = req.query
+    console.log(search)
+    const group = await prisma.group.findUnique({
+      where: {id: groupId},
+      include: {
+        members: true
+      }
+    })
+    const users = await prisma.user.findMany({
+      where:{
+        id: {
+          notIn: group.members.map(m => m.userId)
+        },
+        email: {
+          contains: search as string,
+          mode: 'insensitive'
+        }
+      },
+      select: {
+        id: true, 
+        name: true, 
+        email: true, 
+        avatarUrl: true
+      },
+      orderBy: {
+        email: "asc"
+      }
+    })
+    res.json(users)
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return res.status(400).json({
+        error: 'Validation error',
+        details: e
+      });
+    }
+    
+    if (e instanceof Error) {
+      if (e.message === 'User not found') {
+        return res.status(404).json({ error: e.message });
+      }
+      if (e.message === 'User is already a member of this group') {
+        return res.status(409).json({ error: e.message });
+      }
+    }
+    
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}

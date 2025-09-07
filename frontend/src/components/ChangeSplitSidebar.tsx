@@ -15,7 +15,7 @@ interface Member {
 
 interface Share {
   id: string
-  amountOwed: number
+  amountPaid: number
   user: {
     id: string
     name: string
@@ -29,7 +29,7 @@ interface ChangeSplitSidebarProps {
   currentShares: Share[]
   members: Member[]
   totalAmount: number
-  onSplitChange: (newShares: { userId: string; amount: number }[]) => Promise<void>
+  onSplitChange: (splitType: string, newShares: { userId: string; amountPaid: number }[]) => Promise<void>
   isLoading?: boolean
 }
 
@@ -44,7 +44,7 @@ export default function ChangeSplitSidebar({
 }: ChangeSplitSidebarProps) {
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set())
   const [customAmounts, setCustomAmounts] = useState<Record<string, number>>({})
-  const [splitType, setSplitType] = useState<'equal' | 'custom'>('equal')
+  const [splitType, setSplitType] = useState<'EQUAL' | 'CUSTOM'>('EQUAL')
 
   // Initialize selected members and amounts from current shares
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function ChangeSplitSidebar({
       
       const amounts: Record<string, number> = {}
       currentShares.forEach(share => {
-        amounts[share.user.id] = share.amountOwed
+        amounts[share.user.id] = share.amountPaid
       })
       setCustomAmounts(amounts)
     }
@@ -71,7 +71,7 @@ export default function ChangeSplitSidebar({
     } else {
       newSelected.add(memberId)
       // Set equal amount when selecting
-      if (splitType === 'equal') {
+      if (splitType === 'EQUAL') {
         const equalAmount = totalAmount / newSelected.size
         setCustomAmounts(prev => ({
           ...prev,
@@ -102,10 +102,10 @@ export default function ChangeSplitSidebar({
   const handleSave = async () => {
     const newShares = Array.from(selectedMembers).map(userId => ({
       userId,
-      amount: splitType === 'equal' ? calculateEqualAmount() : (customAmounts[userId] || 0)
+      amountPaid: splitType === 'EQUAL' ? calculateEqualAmount() : (customAmounts[userId] || 0)
     }))
     
-    await onSplitChange(newShares)
+    await onSplitChange(splitType, newShares)
     onClose()
   }
 
@@ -116,15 +116,15 @@ export default function ChangeSplitSidebar({
     
     const amounts: Record<string, number> = {}
     currentShares.forEach(share => {
-      amounts[share.user.id] = share.amountOwed
+      amounts[share.user.id] = share.amountPaid
     })
     setCustomAmounts(amounts)
-    setSplitType('equal')
+    setSplitType('EQUAL')
     onClose()
   }
 
   const isAmountValid = () => {
-    if (splitType === 'equal') {
+    if (splitType === 'EQUAL') {
       return selectedMembers.size > 0
     } else {
       const total = calculateTotalCustom()
@@ -167,9 +167,9 @@ export default function ChangeSplitSidebar({
               </h3>
               <div className="space-y-2">
                 <button
-                  onClick={() => setSplitType('equal')}
+                  onClick={() => setSplitType('EQUAL')}
                   className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                    splitType === 'equal'
+                    splitType === 'EQUAL'
                       ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                       : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
@@ -183,9 +183,9 @@ export default function ChangeSplitSidebar({
                   </div>
                 </button>
                 <button
-                  onClick={() => setSplitType('custom')}
+                  onClick={() => setSplitType('CUSTOM')}
                   className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                    splitType === 'custom'
+                    splitType === 'CUSTOM'
                       ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                       : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
@@ -252,7 +252,7 @@ export default function ChangeSplitSidebar({
                     const member = members.find(m => m.user.id === memberId)
                     if (!member) return null
 
-                    const amount = splitType === 'equal' 
+                    const amount = splitType === 'EQUAL' 
                       ? calculateEqualAmount() 
                       : (customAmounts[memberId] || 0)
 
@@ -266,7 +266,7 @@ export default function ChangeSplitSidebar({
                         <div className="flex-1">
                           <p className="font-medium text-gray-900 dark:text-white">{member.user.name}</p>
                         </div>
-                        {splitType === 'custom' ? (
+                        {splitType === 'CUSTOM' ? (
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-gray-500">$</span>
                             <input
@@ -299,11 +299,11 @@ export default function ChangeSplitSidebar({
                   <div className="flex justify-between items-center">
                     <span className="font-medium text-gray-900 dark:text-white">Total:</span>
                     <span className={`font-semibold ${
-                      Math.abs((splitType === 'equal' ? calculateEqualAmount() * selectedMembers.size : calculateTotalCustom()) - totalAmount) < 0.01
+                      Math.abs((splitType === 'EQUAL' ? calculateEqualAmount() * selectedMembers.size : calculateTotalCustom()) - totalAmount) < 0.01
                         ? 'text-green-600 dark:text-green-400'
                         : 'text-red-600 dark:text-red-400'
                     }`}>
-                      ${splitType === 'equal' ? (calculateEqualAmount() * selectedMembers.size).toFixed(2) : calculateTotalCustom().toFixed(2)}
+                      ${splitType === 'EQUAL' ? (calculateEqualAmount() * selectedMembers.size).toFixed(2) : calculateTotalCustom().toFixed(2)}
                     </span>
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
