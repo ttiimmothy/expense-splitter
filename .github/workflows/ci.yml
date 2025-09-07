@@ -1,9 +1,9 @@
 name: ci
 
 on:
-  push:
-    branches: [ main, prod ]
-
+  pull_request:
+    branches: [ main, production ]
+    
 jobs:
   backend-test:
     runs-on: ubuntu-latest
