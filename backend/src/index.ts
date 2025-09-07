@@ -25,7 +25,8 @@ app.use(helmet());
 
 // CORS configuration
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: ['http://localhost:5173',"https://expense-splitter-jade.vercel.app/login"],
+  // for using cookies
   credentials: true
 }));
 
