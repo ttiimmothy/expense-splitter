@@ -42,6 +42,7 @@ export const register = async (req: Request, res: Response) => {
         error: 'Email already exists'
       });
     }
+    console.error(error)
     
     res.status(500).json({
       error: 'Internal server error'

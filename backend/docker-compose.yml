@@ -8,13 +8,14 @@ services:
       POSTGRES_DB: expense_splitter
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mysecretpassword
+    # to ensure pgadmin can be functional for detecting the postgres service db
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U myuser -d expense_splitter"]
       interval: 5s
       timeout: 3s
       retries: 10
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
   pgadmin:
@@ -35,14 +36,15 @@ services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
     container_name: backend
-    env_file:
-      - .env
     ports:
       - "3001:3001"
+    # for using environment after the container starts, if the env variable only needs when building the service, don't need to set env_file
+    env_file:
+      - .env
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     # volumes likely delete for backend in production
     # volumes:
       # this can help update the backend directly from the localhost, no need to rebuild the image every time you tweak code
