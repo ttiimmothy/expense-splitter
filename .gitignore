@@ -110,3 +110,4 @@ prd.txt
 spec.txt
 frontend/Dockerfile
 nginx*
+**/reference/*

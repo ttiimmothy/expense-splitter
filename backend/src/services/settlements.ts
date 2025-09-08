@@ -113,7 +113,6 @@ export class SettlementService {
         if (toB) toB.balance -= amt;
       }
     }
-
     // Convert to array format
     return Array.from(balances.entries()).map(([userId, data]) => ({
       userId,

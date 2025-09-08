@@ -114,16 +114,16 @@ async function main() {
   });
 
   // Create a settlement
-  const settlement = await prisma.settlement.create({
-    data: {
-      groupId: group.id,
-      fromUserId: user2.id,
-      toUserId: user1.id,
-      amount: 100.00
-    }
-  });
+  // const settlement = await prisma.settlement.create({
+  //   data: {
+  //     groupId: group.id,
+  //     fromUserId: user2.id,
+  //     toUserId: user1.id,
+  //     amount: 100.00
+  //   }
+  // });
 
-  console.log('💸 Created settlement:', `$${settlement.amount} from ${user2.name} to ${user1.name}`);
+  // console.log('💸 Created settlement:', `$${settlement.amount} from ${user2.name} to ${user1.name}`);
 
   console.log('✅ Database seeded successfully!');
   console.log('\n📊 Summary:');
