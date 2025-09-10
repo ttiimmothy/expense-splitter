@@ -90,6 +90,10 @@ export const login = async (req: Request, res: Response) => {
 };
 
 export const logout = async (req: Request, res: Response) => {
-  res.clearCookie('accessToken');
+  res.clearCookie('accessToken', {
+    httpOnly: true,
+    secure: true,        // Must match login
+    sameSite: 'none'     // Must match login
+  });
   res.json({ message: 'Logged out successfully' });
 };

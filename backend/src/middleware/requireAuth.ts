@@ -5,6 +5,8 @@ import { prisma } from '../db/prisma';
 export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = req.cookies.accessToken || req.headers.authorization?.replace('Bearer ', '');
+    console.log(req.cookies.accessToken)
+    console.log(token)
     
     if (!token) {
       return res.status(401).json({ error: 'Access token required' });
