@@ -7,6 +7,7 @@ import { toast } from 'react-hot-toast'
 import { X, Save, DollarSign, Users, Check } from 'lucide-react'
 import { cardDarkMode, cardTextDarkMode } from '@/constants/colors'
 import { createExpenseSchema, type CreateExpenseForm } from '../schemas/expense'
+import { truncateEmailExtra } from '../utils/emailUtils'
 
 interface Member {
   id: string
@@ -62,6 +63,7 @@ export default function EditExpenseSidebar({
   groupId,
   onSuccess
 }: EditExpenseSidebarProps) {
+  
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [splitType, setSplitType] = useState<'EQUAL' | 'CUSTOM'>('EQUAL')
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set())
@@ -312,8 +314,11 @@ export default function EditExpenseSidebar({
                         <p className="font-medium text-gray-900 dark:text-white">
                           {member.user.name}
                         </p>
-                        <p className={`text-sm text-gray-500 ${cardTextDarkMode}`}>
-                          {member.user.email}
+                        <p 
+                          className={`text-sm text-gray-500 ${cardTextDarkMode}`}
+                          title={member.user.email}
+                        >
+                          {truncateEmailExtra(member.user.email)}
                         </p>
                       </div>
                       {selectedMembers.has(member.user.id) && (

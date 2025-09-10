@@ -2,9 +2,10 @@ import { Router } from 'express';
 import { requireAuth } from './middleware/requireAuth';
 import {login, logout, register} from "./controllers/auth";
 import {getMe} from "./controllers/users";
-import {createGroup, findAvailableUsersEmail, getGroupById, getUserGroups, inviteMultipleMembers} from "./controllers/groups";
+import {createGroup, deleteGroupMember, findAvailableUsersEmail, getGroupById, getUserGroups, inviteMultipleMembers} from "./controllers/groups";
 import {createExpense, deleteExpense, editExpense, getExpense, getGroupExpenses, updateExpenseShare} from "./controllers/expenses";
 import {createSettlement, getGroupBalances, getGroupSettlements} from "./controllers/settlements";
+import {requireGroupOwner} from "./middleware/requireGroupOwner";
 
 const router = Router();
 
@@ -21,6 +22,7 @@ router.post('/groups', requireAuth, createGroup);
 router.get('/groups', requireAuth, getUserGroups);
 router.get('/groups/:id', requireAuth, getGroupById);
 router.post('/groups/:id/invite', requireAuth, inviteMultipleMembers);
+router.delete("/groups/:groupId/members/:memberId", requireAuth, requireGroupOwner, deleteGroupMember)
 // query don't need to write in the path
 router.get("/groups/:groupId/available-users", requireAuth, findAvailableUsersEmail)
 

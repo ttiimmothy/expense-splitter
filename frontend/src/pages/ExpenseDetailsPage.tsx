@@ -6,6 +6,7 @@ import { cardDarkMode, cardTextDarkMode } from '@/constants/colors'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
+// import { truncateEmailMedium } from '../utils/emailUtils'
 import ChangeSplitSidebar from '../components/ChangeSplitSidebar'
 import EditExpenseSidebar from '../components/EditExpenseSidebar'
 import {socketService} from "@/lib/socket";
@@ -57,6 +58,7 @@ export default function ExpenseDetailsPage() {
   const [isDeleting, setIsDeleting] = useState(false)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+
 
   const { data: expense, isLoading, error, refetch } = useQuery({
     queryKey: ['expense', expenseId],
@@ -289,7 +291,12 @@ export default function ExpenseDetailsPage() {
                     </div>
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">{share.user.name}</p>
-                      <p className={`text-sm text-gray-500 ${cardTextDarkMode}`}>{share.user.email}</p>
+                      <p 
+                        className={`text-sm text-gray-500 ${cardTextDarkMode}`}
+                        title={share.user.email}
+                      >
+                        {share.user.email}
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">

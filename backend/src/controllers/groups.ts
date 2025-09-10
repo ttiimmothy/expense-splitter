@@ -148,20 +148,38 @@ export const findAvailableUsersEmail = async (req: Request, res: Response) => {
       }
     })
     res.json(users)
-  } catch (e) {
-    if (e instanceof z.ZodError) {
-      return res.status(400).json({
-        error: 'Validation error',
-        details: e
-      });
+  } catch (e) {    
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+export const deleteGroupMember = async (req: Request, res: Response) => {
+  try {
+    const {memberId} = req.params
+    console.log(req.params)
+
+    const member = await prisma.groupMember.findUnique({
+      where: {
+        id: memberId
+      }
+    })
+
+    if (!member) {
+      res.status(404).json({error: "member doesn't exist"})
+      return
     }
-    
+
+    await prisma.groupMember.delete({
+      where: {
+        id: memberId
+      }
+    })
+
+    res.json({message: "group member delete success"})
+  } catch (e) {    
     if (e instanceof Error) {
       if (e.message === 'User not found') {
         return res.status(404).json({ error: e.message });
-      }
-      if (e.message === 'User is already a member of this group') {
-        return res.status(409).json({ error: e.message });
       }
     }
     

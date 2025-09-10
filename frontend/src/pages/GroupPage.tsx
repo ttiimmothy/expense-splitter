@@ -1,10 +1,13 @@
 import { useParams } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useState, useEffect } from 'react'
 import { socketService } from '../lib/socket'
-import { Plus, Users, DollarSign, ArrowLeft } from 'lucide-react'
+import { Plus, Users, DollarSign, ArrowLeft, Trash2, AlertTriangle, Crown, UserCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useAuthStore } from '../stores/authStore'
+import { toast } from 'react-hot-toast'
+import { truncateEmailMedium } from '../utils/emailUtils'
 import CreateExpenseModal from '../components/CreateExpenseModal'
 import ExpenseTable from '../components/ExpenseTable'
 import InviteMemberModal from '../components/InviteMemberModal'
@@ -72,7 +75,14 @@ export default function GroupPage() {
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showSettlementModal, setShowSettlementModal] = useState(false)
   const [selectedSettlement, setSelectedSettlement] = useState<Settlement | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [memberToDelete, setMemberToDelete] = useState<{ id: string; name: string } | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showOwnerAssignConfirm, setShowOwnerAssignConfirm] = useState(false)
+  const [memberToAssignOwner, setMemberToAssignOwner] = useState<{ id: string; name: string } | null>(null)
+  const [isAssigningOwner, setIsAssigningOwner] = useState(false)
   const queryClient = useQueryClient()
+  const { user } = useAuthStore()
 
   const { data: group, isLoading: groupLoading, refetch } = useQuery({
     queryKey: ['group', id],
@@ -142,6 +152,90 @@ export default function GroupPage() {
     setSelectedSettlement(null)
   }
 
+  // Check if current user is the group owner
+  const isOwner = group?.members.some(member => 
+    member.user.id === user?.id && member.role === 'OWNER'
+  )
+
+  // Delete member mutation
+  const deleteMemberMutation = useMutation({
+    mutationFn: async (memberId: string) => {
+      const response = await api.delete(`/groups/${id}/members/${memberId}`)
+      return response.data
+    },
+    onSuccess: () => {
+      toast.success('Member removed successfully!')
+      refetch()
+      setShowDeleteConfirm(false)
+      setMemberToDelete(null)
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || 'Failed to remove member'
+      toast.error(errorMessage)
+    }
+  })
+
+  const handleDeleteMember = (memberId: string, memberName: string) => {
+    setMemberToDelete({ id: memberId, name: memberName })
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDeleteMember = async () => {
+    if (!memberToDelete) return
+    
+    setIsDeleting(true)
+    try {
+      await deleteMemberMutation.mutateAsync(memberToDelete.id)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleCloseDeleteConfirm = () => {
+    setShowDeleteConfirm(false)
+    setMemberToDelete(null)
+  }
+
+  // Assign owner mutation
+  const assignOwnerMutation = useMutation({
+    mutationFn: async (memberId: string) => {
+      const response = await api.put(`/groups/${id}/members/${memberId}/role`, { role: 'OWNER' })
+      return response.data
+    },
+    onSuccess: () => {
+      toast.success('Ownership transferred successfully!')
+      refetch()
+      setShowOwnerAssignConfirm(false)
+      setMemberToAssignOwner(null)
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || 'Failed to transfer ownership'
+      toast.error(errorMessage)
+    }
+  })
+
+  const handleAssignOwner = (memberId: string, memberName: string) => {
+    setMemberToAssignOwner({ id: memberId, name: memberName })
+    setShowOwnerAssignConfirm(true)
+  }
+
+  const confirmAssignOwner = async () => {
+    if (!memberToAssignOwner) return
+    
+    setIsAssigningOwner(true)
+    try {
+      await assignOwnerMutation.mutateAsync(memberToAssignOwner.id)
+    } finally {
+      setIsAssigningOwner(false)
+    }
+  }
+
+  const handleCloseOwnerAssignConfirm = () => {
+    setShowOwnerAssignConfirm(false)
+    setMemberToAssignOwner(null)
+  }
+
+
   if (groupLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -195,8 +289,8 @@ export default function GroupPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="md:col-span-1 xl:col-span-2">
           <div className={`card ${cardDarkMode}`}>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Expenses</h2>
             {expensesLoading ? (
@@ -228,9 +322,41 @@ export default function GroupPage() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900 dark:text-white">{member.user.name}</p>
-                    <p className={`text-xs text-gray-500 ${cardTextDarkMode}`}>{member.user.email}</p>
+                    <p 
+                      className={`text-xs text-gray-500 ${cardTextDarkMode}`}
+                      title={member.user.email}
+                    >
+                      {truncateEmailMedium(member.user.email)}
+                    </p>
                   </div>
-                  <span className={`text-xs text-gray-500 ${cardTextDarkMode}`}>{member.role}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      {member.role === 'OWNER' && (
+                        <span title="Group Owner">
+                          <Crown className="h-3 w-3 text-yellow-500" />
+                        </span>
+                      )}
+                      <span className={`text-xs text-gray-500 ${cardTextDarkMode}`}>{member.role}</span>
+                    </div>
+                    {isOwner && member.role !== 'OWNER' && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleAssignOwner(member.id, member.user.name)}
+                          className="p-1 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                          title={`Make ${member.user.name} the group owner`}
+                        >
+                          <Crown className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMember(member.id, member.user.name)}
+                          className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                          title={`Remove ${member.user.name} from group`}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -296,6 +422,124 @@ export default function GroupPage() {
         settlement={selectedSettlement}
         currency={group?.currency || 'USD'}
       />
+
+      {/* Delete Member Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4 text-center sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={handleCloseDeleteConfirm} />
+            
+            <div className="relative transform overflow-hidden rounded-lg text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md">
+              <div className={`${cardDarkMode} bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4`}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                    <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Remove Member</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">This action cannot be undone</p>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Are you sure you want to remove <span className="font-medium">{memberToDelete?.name}</span> from this group?
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    They will lose access to all group expenses and settlements.
+                  </p>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={handleCloseDeleteConfirm}
+                    className="btn btn-secondary"
+                    disabled={isDeleting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDeleteMember}
+                    className="btn btn-danger flex items-center gap-2"
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Removing...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4" />
+                        Remove Member
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Owner Confirmation Modal */}
+      {showOwnerAssignConfirm && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4 text-center sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={handleCloseOwnerAssignConfirm} />
+            
+            <div className="relative transform overflow-hidden rounded-lg text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md">
+              <div className={`${cardDarkMode} bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4`}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                    <Crown className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Transfer Ownership</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">This action cannot be undone</p>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Are you sure you want to make <span className="font-medium">{memberToAssignOwner?.name}</span> the new group owner?
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    You will become a regular member and lose owner privileges.
+                  </p>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={handleCloseOwnerAssignConfirm}
+                    className="btn btn-secondary"
+                    disabled={isAssigningOwner}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmAssignOwner}
+                    className="btn btn-primary flex items-center gap-2"
+                    disabled={isAssigningOwner}
+                  >
+                    {isAssigningOwner ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Transferring...
+                      </>
+                    ) : (
+                      <>
+                        <Crown className="h-4 w-4" />
+                        Transfer Ownership
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

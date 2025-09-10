@@ -1,6 +1,7 @@
 import { X, CheckCircle, Calendar, User, ArrowRight, DollarSign } from 'lucide-react'
 import { cardDarkMode, cardTextDarkMode } from '@/constants/colors'
 import dayjs from 'dayjs'
+import { truncateEmailExtra } from '../utils/emailUtils'
 
 interface Settlement {
   id: string
@@ -31,6 +32,7 @@ export default function SettlementDetailsModal({
   settlement, 
   currency 
 }: SettlementDetailsModalProps) {
+  
   if (!isOpen || !settlement) return null
 
   return (
@@ -61,7 +63,12 @@ export default function SettlementDetailsModal({
                     </span>
                   </div>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">{settlement.fromUser.name}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{settlement.fromUser.email}</p>
+                  <p 
+                    className="text-xs text-gray-500 dark:text-gray-400"
+                    title={settlement.fromUser.email}
+                  >
+                    {truncateEmailExtra(settlement.fromUser.email)}
+                  </p>
                 </div>
                 
                 <div className="flex flex-col items-center">
@@ -81,7 +88,12 @@ export default function SettlementDetailsModal({
                     </span>
                   </div>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">{settlement.toUser.name}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{settlement.toUser.email}</p>
+                  <p 
+                    className="text-xs text-gray-500 dark:text-gray-400"
+                    title={settlement.toUser.email}
+                  >
+                    {truncateEmailExtra(settlement.toUser.email)}
+                  </p>
                 </div>
               </div>
             </div>
