@@ -1,21 +1,20 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuthStore } from '../stores/authStore'
 import { toast } from 'react-hot-toast'
 import { Eye, EyeOff, UserPlus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import {bgDarkMode, textDarkMode} from "@/constants/colors";
-
-interface RegisterForm {
-  name: string
-  email: string
-  password: string
-}
+import { registerSchema, type RegisterForm } from '../schemas/auth'
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const { register: registerUser, isLoading } = useAuthStore()
-  const { register, handleSubmit, formState: { errors } } = useForm<RegisterForm>()
+  const { register, handleSubmit, formState: { errors } } = useForm<RegisterForm>({
+    resolver: zodResolver(registerSchema),
+    mode: 'onBlur', // Validate on blur for better UX
+  })
 
   const onSubmit = async (data: RegisterForm) => {
     try {
@@ -49,7 +48,7 @@ export default function RegisterPage() {
                 Name
               </label>
               <input
-                {...register('name', { required: 'Name is required' })}
+                {...register('name')}
                 type="text"
                 className="input mt-1"
                 placeholder="Your name"
@@ -64,13 +63,7 @@ export default function RegisterPage() {
                 Email address
               </label>
               <input
-                {...register('email', {
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Invalid email address',
-                  },
-                })}
+                {...register('email')}
                 type="email"
                 className="input mt-1"
                 placeholder="Enter your email"
@@ -86,10 +79,7 @@ export default function RegisterPage() {
               </label>
               <div className="mt-1 relative">
                 <input
-                  {...register('password', {
-                    required: 'Password is required',
-                    minLength: { value: 6, message: 'Password must be at least 6 characters' },
-                  })}
+                  {...register('password')}
                   type={showPassword ? 'text' : 'password'}
                   className="input pr-10"
                   placeholder="Create a password"

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { GroupService } from '../services/groups';
 import {prisma} from "../db/prisma";
+import {io} from "..";
 
 const groupService = new GroupService();
 
@@ -86,6 +87,7 @@ export const inviteMember = async (req: Request, res: Response) => {
       userEmail: data.userEmail,
       inviterId: req.user.id
     });
+    io.emit("group-updated")
     
     res.status(201).json({ member });
   } catch (error) {

@@ -10,6 +10,15 @@ class SocketService {
       this.socket = io(SOCKET_URL, {
         withCredentials: true,
       })
+      
+      // Add connection debugging
+      this.socket.on('connect', () => {
+        // console.log('🔌 Socket connected:', this.socket?.id)
+      })
+      
+      this.socket.on('disconnect', () => {
+        // console.log('🔌 Socket disconnected')
+      })
     }
     return this.socket
   }

@@ -110,3 +110,5 @@ spec.txt
 frontend/Dockerfile
 nginx*
 **/reference/*
+frontend/schemas/README.md
+frontend/examples

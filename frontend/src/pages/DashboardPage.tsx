@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { Plus, Users, DollarSign, Calendar } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import CreateGroupModal from '../components/CreateGroupModal'
 import GroupCard from '../components/GroupCard'
 import {useAuthStore} from "@/stores/authStore";
+import {socketService} from "@/lib/socket";
 
 interface Group {
   id: string
@@ -43,6 +44,23 @@ export default function DashboardPage() {
     setShowCreateModal(false)
     refetch()
   }
+
+   // Socket.IO setup
+   useEffect(() => {
+    // Connect to socket
+    socketService.connect()
+    
+    const onGroupUpdated = () => {
+      console.log('🔄 Group updated event received, refetching groups...')
+      refetch()
+    }
+
+    socketService.onGroupUpdated(onGroupUpdated)
+
+    return () => {
+      socketService.off('group-updated', onGroupUpdated)
+    }
+  }, [refetch])
 
   if (isLoading) {
     return (

@@ -75,6 +75,7 @@ export default function GroupPage() {
   // Socket.IO setup
   useEffect(() => {
     if (id) {
+      socketService.connect()
       socketService.joinGroup(id)
       
       const onExpenseCreated = () => {
@@ -90,8 +91,8 @@ export default function GroupPage() {
 
       return () => {
         socketService.leaveGroup(id)
-        socketService.off('expense-created', refetchExpenses)
-        socketService.off('group-updated', refetch)
+        socketService.off('expense-created', onExpenseCreated)
+        socketService.off('group-updated', onGroupUpdated)
       }
     }
   }, [id, refetchExpenses, refetch])

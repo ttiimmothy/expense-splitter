@@ -11,7 +11,7 @@ export const initializeSocketIO = (server: HTTPServer) => {
   });
 
   io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
+    // console.log('User connected:', socket.id);
 
     socket.on('join-group', (groupId: string) => {
       socket.join(`group-${groupId}`);
@@ -24,7 +24,7 @@ export const initializeSocketIO = (server: HTTPServer) => {
     });
 
     socket.on('disconnect', () => {
-      console.log('User disconnected:', socket.id);
+      // console.log('User disconnected:', socket.id);
     });
   });
 

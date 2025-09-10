@@ -7,6 +7,7 @@ import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import ChangeSplitSidebar from '../components/ChangeSplitSidebar'
+import EditExpenseSidebar from '../components/EditExpenseSidebar'
 import {socketService} from "@/lib/socket";
 
 interface Expense {
@@ -50,6 +51,7 @@ interface Group {
 export default function ExpenseDetailsPage() {
   const { groupId, expenseId } = useParams<{ groupId: string; expenseId: string }>()
   const [showSplitSidebar, setShowSplitSidebar] = useState(false)
+  const [showEditSidebar, setShowEditSidebar] = useState(false)
   const [isUpdatingSplit, setIsUpdatingSplit] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -96,6 +98,7 @@ export default function ExpenseDetailsPage() {
    // Socket.IO setup
    useEffect(() => {
     if (groupId) {
+      socketService.connect()
       socketService.joinGroup(groupId)
       
       const onExpenseUpdated = () => {
@@ -106,7 +109,7 @@ export default function ExpenseDetailsPage() {
 
       return () => {
         socketService.leaveGroup(groupId)
-        socketService.off('expense-updated', refetch)
+        socketService.off('expense-updated', onExpenseUpdated)
       }
     }
   }, [groupId, refetch])
@@ -195,7 +198,7 @@ export default function ExpenseDetailsPage() {
   }
 
   return (
-    <div className="space-y-6 min-h-screen">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -210,14 +213,23 @@ export default function ExpenseDetailsPage() {
             <p className="text-gray-600 dark:text-gray-400">View expense information and splits</p>
           </div>
         </div>
-        <button
-          onClick={() => setShowDeleteConfirm(true)}
-          className="btn btn-danger flex items-center gap-2"
-          disabled={isDeleting}
-        >
-          <Trash2 className="h-4 w-4" />
-          Delete Expense
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowEditSidebar(true)}
+            className="btn btn-primary flex items-center gap-2"
+          >
+            <Edit3 className="h-4 w-4" />
+            Edit Expense
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="btn btn-danger flex items-center gap-2"
+            disabled={isDeleting}
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete Expense
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -234,9 +246,9 @@ export default function ExpenseDetailsPage() {
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                     {expense.description}
                   </h2>
-                  <p className="text-gray-600 dark:text-gray-400">
+                  {/* <p className="text-gray-600 dark:text-gray-400">
                     Added {dayjs(expense.createdAt).format('MMMM D, YYYY [at] h:mm A')}
-                  </p>
+                  </p> */}
                 </div>
               </div>
               <div className="text-right">
@@ -257,14 +269,14 @@ export default function ExpenseDetailsPage() {
                 <Users className="h-5 w-5" />
                 Split Details
               </h3>
-              <button
+              {/* <button
                 onClick={() => setShowSplitSidebar(true)}
                 className="btn btn-secondary flex items-center gap-2 text-sm"
                 disabled={isUpdatingSplit}
               >
                 <Edit3 className="h-4 w-4" />
                 Edit Split
-              </button>
+              </button> */}
             </div>
             <div className="space-y-3">
               {expense.shares.map((share) => (
@@ -370,6 +382,21 @@ export default function ExpenseDetailsPage() {
           totalAmount={typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount || 0}
           onSplitChange={handleSplitChange}
           isLoading={isUpdatingSplit}
+        />
+      )}
+
+      {/* Edit Expense Sidebar */}
+      {group && expense && (
+        <EditExpenseSidebar
+          isOpen={showEditSidebar}
+          onClose={() => setShowEditSidebar(false)}
+          expense={expense}
+          members={group.members}
+          groupId={groupId!}
+          onSuccess={() => {
+            // Refetch expense data after successful edit
+            refetch()
+          }}
         />
       )}
 

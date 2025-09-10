@@ -3,7 +3,7 @@ import { requireAuth } from './middleware/requireAuth';
 import {login, logout, register} from "./controllers/auth";
 import {getMe} from "./controllers/users";
 import {createGroup, findAvailableUsersEmail, getGroupById, getUserGroups, inviteMember} from "./controllers/groups";
-import {createExpense, deleteExpense, getExpense, getGroupExpenses, updateExpenseShare} from "./controllers/expenses";
+import {createExpense, deleteExpense, editExpense, getExpense, getGroupExpenses, updateExpenseShare} from "./controllers/expenses";
 import {createSettlement, getGroupBalances} from "./controllers/settlements";
 
 const router = Router();
@@ -29,6 +29,7 @@ router.post('/groups/:id/expenses', requireAuth, createExpense);
 router.get('/groups/:id/expenses', requireAuth, getGroupExpenses);
 router.get('/groups/:id/expenses/:expenseId', requireAuth, getExpense);
 router.put("/groups/:groupId/expenses/:expenseId/split", requireAuth, updateExpenseShare)
+router.put("/groups/:groupId/expenses/:expenseId", requireAuth, editExpense)
 router.delete("/groups/:groupId/expenses/:expenseId", requireAuth, deleteExpense)
 
 // Settlement routes (auth required)

@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { toast } from 'react-hot-toast'
 import { X, Plus, Minus, Check } from 'lucide-react'
 import {cardDarkMode, cardTextDarkMode} from "@/constants/colors";
+import { createExpenseSchema, type CreateExpenseForm } from '../schemas/expense'
 
 interface ExpenseFormProps {
   isOpen: boolean
@@ -23,15 +25,7 @@ interface ExpenseFormProps {
   }>
 }
 
-interface ExpenseFormData {
-  description: string
-  amount: number
-  split: 'EQUAL' | 'CUSTOM'
-  shares: Array<{
-    userId: string
-    amountPaid: number
-  }>
-}
+// Using ExpenseForm type from schema instead of local interface
 
 export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId, groupMembers }: ExpenseFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -39,8 +33,12 @@ export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set())
   const queryClient = useQueryClient()
   
-  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<ExpenseFormData>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<CreateExpenseForm>({
+    resolver: zodResolver(createExpenseSchema),
+    mode: 'onBlur',
     defaultValues: {
+      description: '',
+      amount: 0,
       split: 'EQUAL',
       shares: []
     }
@@ -58,7 +56,7 @@ export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId
   }, [isOpen, groupMembers])
 
   const createExpenseMutation = useMutation({
-    mutationFn: async (data: ExpenseFormData) => {
+    mutationFn: async (data: CreateExpenseForm) => {
       const response = await api.post(`/groups/${groupId}/expenses`, data)
       return response.data
     },
@@ -73,7 +71,7 @@ export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId
     }
   })
 
-  const onSubmit = async (data: ExpenseFormData) => {
+  const onSubmit = async (data: CreateExpenseForm) => {
     setIsSubmitting(true)
     try {
       // Only include selected members
@@ -221,7 +219,7 @@ export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId
                     Description
                   </label>
                   <input
-                    {...register('description', { required: 'Description is required' })}
+                    {...register('description')}
                     type="text"
                     className={`input ${cardDarkMode}`}
                     placeholder="e.g., Dinner at restaurant"
@@ -236,10 +234,7 @@ export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId
                     Amount
                   </label>
                   <input
-                    {...register('amount', { 
-                      required: 'Amount is required',
-                      min: { value: 0.01, message: 'Amount must be greater than 0' }
-                    })}
+                    {...register('amount', { valueAsNumber: true })}
                     type="number"
                     step="0.01"
                     min="0.01"
@@ -330,7 +325,7 @@ export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId
                 </div>
               </div>
 
-              {splitType === 'EQUAL' && watchedAmount && getSelectedMembersCount() > 0 && (
+              {splitType === 'EQUAL' && getSelectedMembersCount() > 0 && (
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                   <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Equal Split Preview</h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400">

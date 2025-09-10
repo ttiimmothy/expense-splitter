@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { api } from '../lib/api'
+import { invalidateQueries } from '../lib/queryClient'
 
 interface User {
   id: string
@@ -38,7 +39,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true })
     try {
       const response = await api.post('/auth/register', { name, email, password })
-      set({ user: response.data.user, isLoading: false, hasCheckedAuth: true })
+      const { user } = response.data
+      set({ user, isLoading: false, hasCheckedAuth: true })
+      
+      // Invalidate groups query for the newly registered user
+      if (user?.id) {
+        invalidateQueries(['groups', user.id])
+      }
     } catch (error) {
       set({ isLoading: false })
       throw error

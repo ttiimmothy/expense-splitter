@@ -150,3 +150,41 @@ export const deleteExpense = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+export const editExpense = async (req: Request, res: Response) => {
+  try {
+    const {groupId, expenseId} = req.params
+    const {description, amount, split, shares} = req.body
+    await prisma.expense.update({
+      where: {id: expenseId},
+      data:
+      {
+        description,
+        amount,
+        split,
+        shares: {
+          upsert: shares.map((share) => ({
+            where: {expenseId_userId: {expenseId, userId: share.userId}},
+            create: { 
+              userId: share.userId,
+              amountPaid: new Decimal(share.amountPaid)
+            },
+            update: { 
+              amountPaid: new Decimal(share.amountPaid)
+            }
+          }))
+        }
+      }
+    })
+    io.to(groupId).emit("expense-updated")
+
+    res.json({message: "Expense split and shares update success"})
+  } catch (e) {
+    if (e instanceof Error && e.message === 'Access denied') {
+      return res.status(403).json({ error: e.message });
+    }
+    console.error(e)
+    
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}

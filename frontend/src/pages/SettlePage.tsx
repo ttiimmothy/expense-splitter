@@ -41,6 +41,7 @@ export default function SettlePage() {
 
   useEffect(() => {
     if (id) {
+      socketService.connect()
       socketService.joinGroup(id)
       
       const onSettlementCreated = () => {

@@ -1,21 +1,21 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuthStore } from '../stores/authStore'
 import { toast } from 'react-hot-toast'
 import { Eye, EyeOff, LogIn } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import {bgDarkMode, cardDarkMode, textDarkMode} from "@/constants/colors";
 import {useQueryClient} from "@tanstack/react-query";
-
-interface LoginForm {
-  email: string
-  password: string
-}
+import { loginSchema, type LoginForm } from '../schemas/auth'
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const { login, isLoading } = useAuthStore()
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>()
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+    mode: 'onBlur',
+  })
   const queryClient = useQueryClient()
 
   const onSubmit = async (data: LoginForm) => {
@@ -50,13 +50,7 @@ export default function LoginPage() {
                 Email address
               </label>
               <input
-                {...register('email', { 
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Invalid email address'
-                  }
-                })}
+                {...register('email')}
                 type="email"
                 className={`input ${cardDarkMode} mt-1`}
                 placeholder="Enter your email"
@@ -72,7 +66,7 @@ export default function LoginPage() {
               </label>
               <div className="mt-1 relative">
                 <input
-                  {...register('password', { required: 'Password is required' })}
+                  {...register('password')}
                   type={showPassword ? 'text' : 'password'}
                   className={`input ${cardDarkMode} pr-10`}
                   placeholder="Enter your password"
