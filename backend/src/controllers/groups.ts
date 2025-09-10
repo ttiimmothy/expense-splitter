@@ -156,7 +156,6 @@ export const findAvailableUsersEmail = async (req: Request, res: Response) => {
 export const deleteGroupMember = async (req: Request, res: Response) => {
   try {
     const {memberId} = req.params
-    console.log(req.params)
 
     const member = await prisma.groupMember.findUnique({
       where: {

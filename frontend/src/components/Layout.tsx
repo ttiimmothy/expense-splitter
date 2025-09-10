@@ -26,7 +26,8 @@ export default function Layout({ children }: LayoutProps) {
     const initial =
       stored !== null
       ? JSON.parse(stored)
-      : window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+      // : window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+      : false
     setDarkMode(initial)
     document.documentElement.classList.toggle('dark', initial)
   }, [])
