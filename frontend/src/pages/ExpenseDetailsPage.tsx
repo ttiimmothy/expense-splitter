@@ -61,7 +61,7 @@ export default function ExpenseDetailsPage() {
   const { data: expense, isLoading, error, refetch } = useQuery({
     queryKey: ['expense', expenseId],
     queryFn: async () => {
-      const response = await api.get(`/groups/${groupId}/expenses/${expenseId}`)
+      const response = await api(`/groups/${groupId}/expenses/${expenseId}`)
       return response.data as Expense
     },
     enabled: !!groupId && !!expenseId
@@ -70,7 +70,7 @@ export default function ExpenseDetailsPage() {
   const { data: group } = useQuery({
     queryKey: ['group', groupId],
     queryFn: async () => {
-      const response = await api.get(`/groups/${groupId}`)
+      const response = await api(`/groups/${groupId}`)
       return response.data.group as Group
     },
     enabled: !!groupId

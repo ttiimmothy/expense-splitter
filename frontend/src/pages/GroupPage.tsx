@@ -8,6 +8,8 @@ import { Link } from 'react-router-dom'
 import CreateExpenseModal from '../components/CreateExpenseModal'
 import ExpenseTable from '../components/ExpenseTable'
 import InviteMemberModal from '../components/InviteMemberModal'
+import SettlementList from '../components/SettlementList'
+import SettlementDetailsModal from '../components/SettlementDetailsModal'
 import {cardDarkMode, cardTextDarkMode} from "@/constants/colors";
 
 interface Group {
@@ -48,16 +50,34 @@ interface Expense {
   }>
 }
 
+interface Settlement {
+  id: string
+  amount: number
+  createdAt: string
+  fromUser: {
+    id: string
+    name: string
+    email: string
+  }
+  toUser: {
+    id: string
+    name: string
+    email: string
+  }
+}
+
 export default function GroupPage() {
   const { id } = useParams<{ id: string }>()
   const [showExpenseForm, setShowExpenseForm] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const [showSettlementModal, setShowSettlementModal] = useState(false)
+  const [selectedSettlement, setSelectedSettlement] = useState<Settlement | null>(null)
   const queryClient = useQueryClient()
 
   const { data: group, isLoading: groupLoading, refetch } = useQuery({
     queryKey: ['group', id],
     queryFn: async () => {
-      const response = await api.get(`/groups/${id}`)
+      const response = await api(`/groups/${id}`)
       return response.data.group as Group
     },
     enabled: !!id
@@ -66,8 +86,17 @@ export default function GroupPage() {
   const { data: expenses, isLoading: expensesLoading, refetch: refetchExpenses } = useQuery({
     queryKey: ['expenses', id],
     queryFn: async () => {
-      const response = await api.get(`/groups/${id}/expenses`)
+      const response = await api(`/groups/${id}/expenses`)
       return response.data.expenses as Expense[]
+    },
+    enabled: !!id
+  })
+
+  const { data: settlements, isLoading: settlementsLoading, refetch: refetchSettlements } = useQuery({
+    queryKey: ['settlements', id],
+    queryFn: async () => {
+      const response = await api(`/groups/${id}/settlements`)
+      return response.data as Settlement[]
     },
     enabled: !!id
   })
@@ -86,16 +115,32 @@ export default function GroupPage() {
         refetch()
       }
 
+      const onSettlementCreated = () => {
+        refetchSettlements()
+      }
+
       socketService.onExpenseCreated(onExpenseCreated)
       socketService.onGroupUpdated(onGroupUpdated)
+      socketService.onSettlementCreated(onSettlementCreated)
 
       return () => {
         socketService.leaveGroup(id)
         socketService.off('expense-created', onExpenseCreated)
         socketService.off('group-updated', onGroupUpdated)
+        socketService.off('settlement-created', onSettlementCreated)
       }
     }
-  }, [id, refetchExpenses, refetch])
+  }, [id, refetchExpenses, refetch, refetchSettlements])
+
+  const handleSettlementClick = (settlement: Settlement) => {
+    setSelectedSettlement(settlement)
+    setShowSettlementModal(true)
+  }
+
+  const handleCloseSettlementModal = () => {
+    setShowSettlementModal(false)
+    setSelectedSettlement(null)
+  }
 
   if (groupLoading) {
     return (
@@ -121,7 +166,7 @@ export default function GroupPage() {
   }
 
   return (
-    <div className="space-y-6 min-h-screen">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link to="/" className="text-gray-400 hover:text-gray-600">
@@ -153,7 +198,7 @@ export default function GroupPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <div className={`card ${cardDarkMode}`}>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Expenses</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Expenses</h2>
             {expensesLoading ? (
               <div className="flex items-center justify-center h-32">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
@@ -172,17 +217,17 @@ export default function GroupPage() {
 
         <div className="space-y-6">
         <div className={`card ${cardDarkMode}`}>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Members</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Members</h3>
             <div className="space-y-2">
               {group.members.map((member) => (
                 <div key={member.id} className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
-                    <span className="text-sm font-medium text-primary-600">
+                  <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-800 flex items-center justify-center">
+                    <span className="text-sm font-medium text-primary-600 dark:text-primary-300">
                       {member.user.name.charAt(0)}
                     </span>
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{member.user.name}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{member.user.name}</p>
                     <p className={`text-xs text-gray-500 ${cardTextDarkMode}`}>{member.user.email}</p>
                   </div>
                   <span className={`text-xs text-gray-500 ${cardTextDarkMode}`}>{member.role}</span>
@@ -192,18 +237,28 @@ export default function GroupPage() {
           </div>
 
           <div className={`card ${cardDarkMode}`}>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Settlements</h3>
+            <SettlementList 
+              settlements={settlements || []} 
+              isLoading={settlementsLoading}
+              currency={group.currency}
+              onSettlementClick={handleSettlementClick}
+            />
+          </div>
+
+          <div className={`card ${cardDarkMode}`}>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
             <div className="space-y-2">
               <Link
                 to={`/groups/${id}/settle`}
-                className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                className="block w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 onClick={()=>{queryClient.invalidateQueries({queryKey:["balances"]})}}
               >
                 View Balances & Settle
               </Link>
               <button
                 onClick={() => setShowInviteModal(true)}
-                className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                className="block w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
                 Invite Members
               </button>
@@ -233,6 +288,13 @@ export default function GroupPage() {
           refetch()
           // window.location.reload()
         }}
+      />
+
+      <SettlementDetailsModal
+        isOpen={showSettlementModal}
+        onClose={handleCloseSettlementModal}
+        settlement={selectedSettlement}
+        currency={group?.currency || 'USD'}
       />
     </div>
   )

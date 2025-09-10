@@ -15,12 +15,12 @@ export const initializeSocketIO = (server: HTTPServer) => {
 
     socket.on('join-group', (groupId: string) => {
       socket.join(`group-${groupId}`);
-      console.log(`User ${socket.id} joined group ${groupId}`);
+      // console.log(`User ${socket.id} joined group ${groupId}`);
     });
 
     socket.on('leave-group', (groupId: string) => {
       socket.leave(`group-${groupId}`);
-      console.log(`User ${socket.id} left group ${groupId}`);
+      // console.log(`User ${socket.id} left group ${groupId}`);
     });
 
     socket.on('disconnect', () => {

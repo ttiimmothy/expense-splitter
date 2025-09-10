@@ -11,8 +11,8 @@ const createGroupSchema = z.object({
   currency: z.string().optional()
 });
 
-const inviteMemberSchema = z.object({
-  userEmail: z.email()
+const inviteMembersSchema = z.object({
+  userEmails: z.array(z.email()).min(1).max(10)
 });
 
 export const createGroup = async (req: Request, res: Response) => {
@@ -73,23 +73,28 @@ export const getGroupById = async (req: Request, res: Response) => {
   }
 };
 
-export const inviteMember = async (req: Request, res: Response) => {
+export const inviteMultipleMembers = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
     const { id: groupId } = req.params;
-    const data = inviteMemberSchema.parse(req.body);
+    const data = inviteMembersSchema.parse(req.body);
     
-    const member = await groupService.inviteMember({
-      groupId,
-      userEmail: data.userEmail,
-      inviterId: req.user.id
-    });
+    const invitedMembers = await Promise.all(
+      data.userEmails.map(async (email) => 
+        await groupService.inviteMember({
+          groupId,
+          userEmail: email,
+          inviterId: req.user.id
+        })
+      )
+    );
+    
     io.emit("group-updated")
     
-    res.status(201).json({ member });
+    res.status(201).json({ members: invitedMembers, invitedCount: invitedMembers.length });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({

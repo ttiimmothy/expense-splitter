@@ -279,7 +279,7 @@ export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId
                         checked={selectedMembers.has(member.user.id)}
                         onChange={() => {
                           handleMemberToggle(member.user.id)
-                          // NOTE: when trigger together, the latest function can't the new state for selectedMembers, so call inside the handleMemberToggle function and pass the new state to the latest function
+                          // NOTE: when trigger together, the latest function can't obtain the new state for selectedMembers, so call inside the handleMemberToggle function and pass the new state to the latest function
                           // updateCustomShareToIncludeSelectedMember(member.user.id)
                         }}
                         className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"

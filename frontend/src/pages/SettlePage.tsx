@@ -30,7 +30,7 @@ export default function SettlePage() {
   const { data: balanceData, isLoading, refetch } = useQuery({
     queryKey: ['balances', id],
     queryFn: async () => {
-      const response = await api.get(`/balances/${id}`)
+      const response = await api(`/balances/${id}`)
       return {
         balances: response.data.balances as Balance[],
         suggestions: response.data.suggestions as SettlementSuggestion[]
@@ -59,7 +59,7 @@ export default function SettlePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen">
+      <div>
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
         </div>
@@ -69,7 +69,7 @@ export default function SettlePage() {
 
   if (!balanceData) {
     return (
-      <div className="text-center py-12 min-h-screen">
+      <div className="text-center py-12">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">Unable to load balances</h3>
         <p className="mt-1 text-gray-500 dark:text-gray-300">Please try again later.</p>
       </div>

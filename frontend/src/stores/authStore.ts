@@ -72,7 +72,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     set({ isLoading: true })
     try {
-      const response = await api.get('/me')
+      const response = await api('/auth/me')
       set({ user: response.data.user, isLoading: false, hasCheckedAuth: true })
     } catch (error) {
       set({ user: null, isLoading: false, hasCheckedAuth: true })

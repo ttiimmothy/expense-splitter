@@ -35,7 +35,7 @@ export default function DashboardPage() {
   const { data: groups, isLoading, refetch } = useQuery({
     queryKey: ["groups", user?.id],
     queryFn: async () => {
-      const response = await api.get('/groups')
+      const response = await api('/groups')
       return response.data.groups as Group[]
     },
   })

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { SettlementService } from '../services/settlements';
 import {io} from "..";
+import {prisma} from "@/db/prisma";
 
 const settlementService = new SettlementService();
 
@@ -69,3 +70,30 @@ export const createSettlement = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+export const getGroupSettlements = async (req:Request, res:Response) => {
+  const {groupId} = req.params
+
+  const settlements = await prisma.settlement.findMany({
+    where: {groupId},
+    include: {
+      fromUser: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      },
+      toUser: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      }
+    },
+    orderBy: {createdAt: "desc"}
+  })
+
+  res.json(settlements)
+}

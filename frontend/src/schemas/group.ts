@@ -23,6 +23,19 @@ export const inviteMemberSchema = z.object({
     .max(100, 'Email must be less than 100 characters'),
 })
 
+// Invite multiple members schema
+export const inviteMultipleMembersSchema = z.object({
+  userEmails: z
+    .array(z.email('Invalid email address'))
+    .min(1, 'At least one email is required')
+    .max(10, 'Cannot invite more than 10 members at once')
+    .refine(
+      (emails) => emails.length === new Set(emails).size,
+      'Duplicate emails are not allowed'
+    ),
+})
+
 // Type exports
 export type CreateGroupForm = z.infer<typeof createGroupSchema>
 export type InviteMemberForm = z.infer<typeof inviteMemberSchema>
+export type InviteMultipleMembersForm = z.infer<typeof inviteMultipleMembersSchema>
