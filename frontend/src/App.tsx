@@ -13,7 +13,6 @@ import LoginLayout from "./components/LoginLayout";
 
 function App() {
   const { user, checkAuth } = useAuthStore()
-  console.log(user)
 
   useEffect(() => {
     checkAuth()
