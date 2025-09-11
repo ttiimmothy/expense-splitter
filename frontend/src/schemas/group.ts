@@ -46,8 +46,8 @@ export const editGroupSchema = z.object({
   currency: z
     .string()
     .min(1, 'Currency is required')
-    .length(3, 'Currency must be a 3-letter code (e.g., USD, EUR)')
-    .regex(/^[A-Z]{3}$/, 'Currency must be uppercase (e.g., USD, EUR)'),
+    // .length(3, 'Currency must be a 3-letter code (e.g., USD, EUR)')
+    // .regex(/^[A-Z]{3}$/, 'Currency must be uppercase (e.g., USD, EUR)'),
 })
 
 // Type exports
