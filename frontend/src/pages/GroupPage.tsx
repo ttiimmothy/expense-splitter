@@ -3,7 +3,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useState, useEffect } from 'react'
 import { socketService } from '../lib/socket'
-import { Plus, Users, DollarSign, ArrowLeft, Trash2, AlertTriangle, Crown, UserCheck, Settings } from 'lucide-react'
+import { Plus, Users, DollarSign, ArrowLeft, Trash2, AlertTriangle, Crown, UserCheck, Settings, Edit3 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { toast } from 'react-hot-toast'
@@ -13,6 +13,7 @@ import ExpenseTable from '../components/ExpenseTable'
 import InviteMemberModal from '../components/InviteMemberModal'
 import SettlementList from '../components/SettlementList'
 import SettlementDetailsModal from '../components/SettlementDetailsModal'
+import EditGroupModal from '../components/EditGroupModal'
 import {cardDarkMode, cardTextDarkMode} from "@/constants/colors";
 
 interface Group {
@@ -83,6 +84,7 @@ export default function GroupPage() {
   const [isAssigningOwner, setIsAssigningOwner] = useState(false)
   const [showDeleteGroupConfirm, setShowDeleteGroupConfirm] = useState(false)
   const [isDeletingGroup, setIsDeletingGroup] = useState(false)
+  const [showEditGroupModal, setShowEditGroupModal] = useState(false)
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
 
@@ -272,6 +274,14 @@ export default function GroupPage() {
     setShowDeleteGroupConfirm(false)
   }
 
+  const handleEditGroup = () => {
+    setShowEditGroupModal(true)
+  }
+
+  const handleEditGroupSuccess = () => {
+    refetchGroupDetails()
+  }
+
 
   if (groupLoading) {
     return (
@@ -303,10 +313,11 @@ export default function GroupPage() {
           <Link to="/" className="text-gray-400 hover:text-gray-600">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{group.name}</h1>
             <p className="text-gray-600 dark:text-gray-400">{group.members.length} members • {group.currency}</p>
           </div>
+          
         </div>
         {/* {isOwner && (
           <div className="flex items-center gap-2">
@@ -328,6 +339,16 @@ export default function GroupPage() {
             <Users className="h-4 w-4" />
             Invite
           </button> */}
+          {/* {(
+            <button
+              onClick={handleEditGroup}
+              className="btn btn-secondary flex items-center gap-2"
+              title="Edit group details"
+            >
+              <Edit3 className="h-4 w-4" />
+              Edit Group
+            </button>
+          )} */}
           <button
             onClick={() => setShowExpenseForm(true)}
             className="btn btn-primary flex items-center gap-2"
@@ -436,6 +457,12 @@ export default function GroupPage() {
                 className="block w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
                 Invite Members
+              </button>
+              <button
+                onClick={handleEditGroup}
+                className="block w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Edit Group
               </button>
             </div>
           </div>
@@ -659,6 +686,16 @@ export default function GroupPage() {
           </div>
         </div>
       )}
+
+      {/* Edit Group Modal */}
+      <EditGroupModal
+        isOpen={showEditGroupModal}
+        onClose={() => setShowEditGroupModal(false)}
+        onSuccess={handleEditGroupSuccess}
+        groupId={id!}
+        currentName={group?.name || ''}
+        currentCurrency={group?.currency || 'USD'}
+      />
     </div>
   )
 }

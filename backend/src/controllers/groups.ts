@@ -261,3 +261,14 @@ export const deleteGroup = async (req: Request, res: Response) => {
 
   res.json({message: "group delete success"})
 }
+
+export const editGroup = async (req: Request, res: Response) => {
+  const {groupId} = req.params
+
+  await prisma.group.update({
+    where: {id: groupId},
+    data: req.body
+  })
+
+  res.json({message: "group update success"})
+}

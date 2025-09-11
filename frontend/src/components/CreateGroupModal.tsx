@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { toast } from 'react-hot-toast'
 import { X, Plus } from 'lucide-react'
 import {cardDarkMode, cardTextDarkMode} from "@/constants/colors";
+import {CURRENCIES} from "@/constants/currencies";
 
 interface CreateGroupModalProps {
   isOpen: boolean
@@ -16,15 +17,6 @@ interface CreateGroupForm {
   name: string
   currency: string
 }
-
-const CURRENCIES = [
-  { value: 'USD', label: 'US Dollar ($)' },
-  { value: 'EUR', label: 'Euro (€)' },
-  { value: 'GBP', label: 'British Pound (£)' },
-  { value: 'JPY', label: 'Japanese Yen (¥)' },
-  { value: 'CAD', label: 'Canadian Dollar (C$)' },
-  { value: 'AUD', label: 'Australian Dollar (A$)' },
-]
 
 export default function CreateGroupModal({ isOpen, onClose, onSuccess }: CreateGroupModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
