@@ -24,16 +24,19 @@ export const createExpense = async (req: Request, res: Response) => {
     }
 
     const { groupId } = req.params;
-
-    const parsedBody = {...req.body, amount: parseFloat(req.body.amount), shares: req.body.shares.map((share) => ({...share, amountPaid: parseFloat(share.amountPaid)}))}
-
+    const parsedBody = {
+      ...req.body, 
+      amount: parseFloat(req.body.amount), 
+      shares: req.body.shares.map((share) => ({...share, amountPaid: parseFloat(share.amountPaid)}))
+    }
     const data = createExpenseSchema.parse(parsedBody);
     
     const expense = await expenseService.createExpense({
       ...data,
       groupId,
     });
-    io.to(groupId).emit("expense-created")
+
+    io.to(`group-${groupId}`).emit("expense-created")
     
     res.status(201).json({ expense });
   } catch (error) {
@@ -102,7 +105,7 @@ export const updateExpenseShare = async (req: Request, res: Response) => {
         }
       }
     })
-    io.to(groupId).emit("expense-updated")
+    io.to(`$group-${groupId}`).emit("expense-updated")
 
     res.json({message: "Expense split and shares update success"})
   } catch (e) {
@@ -122,7 +125,7 @@ export const deleteExpense = async (req: Request, res: Response) => {
       where: {id: expenseId}
     })
     
-    io.to(groupId).emit("expense-updated")
+    io.to(`$group-${groupId}`).emit("expense-updated")
 
     res.json({message: "expense delete success"})
   } catch (e) {
@@ -160,7 +163,7 @@ export const editExpense = async (req: Request, res: Response) => {
         }
       }
     })
-    io.to(groupId).emit("expense-updated")
+    io.to(`$group-${groupId}`).emit("expense-updated")
 
     res.json({message: "Expense split and shares update success"})
   } catch (e) {

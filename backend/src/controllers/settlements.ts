@@ -52,7 +52,7 @@ export const createSettlement = async (req: Request, res: Response) => {
       req.user.id
     );
 
-    io.to(groupId).emit("settlement-created")
+    io.to(`$group-${groupId}`).emit("settlement-created")
     
     res.status(201).json({ settlement });
   } catch (error) {

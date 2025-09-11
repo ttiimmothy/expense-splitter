@@ -120,6 +120,7 @@ export default function GroupPage() {
       socketService.joinGroup(id)
       
       const onExpenseCreated = () => {
+        console.log("refetching expense")
         refetchExpenses()
       }
 
