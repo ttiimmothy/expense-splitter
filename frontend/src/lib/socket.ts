@@ -30,13 +30,13 @@ class SocketService {
     }
   }
 
-  joinGroup(groupId: string) {
+  joinSocketGroup(groupId: string) {
     if (this.socket) {
       this.socket.emit('join-group', groupId)
     }
   }
 
-  leaveGroup(groupId: string) {
+  leaveSocketGroup(groupId: string) {
     if (this.socket) {
       this.socket.emit('leave-group', groupId)
     }

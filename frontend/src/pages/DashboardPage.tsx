@@ -32,9 +32,6 @@ interface Group {
 
 export default function DashboardPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [showDeleteGroupConfirm, setShowDeleteGroupConfirm] = useState(false)
-  const [groupToDelete, setGroupToDelete] = useState<{ id: string; name: string } | null>(null)
-  const [isDeletingGroup, setIsDeletingGroup] = useState(false)
   const {user} = useAuthStore()
 
   const { data: groups, isLoading, refetch } = useQuery({
@@ -66,45 +63,6 @@ export default function DashboardPage() {
       socketService.off('group-updated', onGroupUpdated)
     }
   }, [refetch])
-
-  // Delete group mutation
-  // const deleteGroupMutation = useMutation({
-  //   mutationFn: async (groupId: string) => {
-  //     const response = await api.delete(`/groups/${groupId}`)
-  //     return response.data
-  //   },
-  //   onSuccess: () => {
-  //     toast.success('Group deleted successfully!')
-  //     refetch()
-  //     setShowDeleteGroupConfirm(false)
-  //     setGroupToDelete(null)
-  //   },
-  //   onError: (error: any) => {
-  //     const errorMessage = error.response?.data?.error || 'Failed to delete group'
-  //     toast.error(errorMessage)
-  //   }
-  // })
-
-  // const handleDeleteGroup = (groupId: string, groupName: string) => {
-  //   setGroupToDelete({ id: groupId, name: groupName })
-  //   setShowDeleteGroupConfirm(true)
-  // }
-
-  // const confirmDeleteGroup = async () => {
-  //   if (!groupToDelete) return
-    
-  //   setIsDeletingGroup(true)
-  //   try {
-  //     await deleteGroupMutation.mutateAsync(groupToDelete.id)
-  //   } finally {
-  //     setIsDeletingGroup(false)
-  //   }
-  // }
-
-  // const handleCloseDeleteGroupConfirm = () => {
-  //   setShowDeleteGroupConfirm(false)
-  //   setGroupToDelete(null)
-  // }
 
   // Check if user is owner of a group
   const isGroupOwner = (group: Group) => {
@@ -177,64 +135,6 @@ export default function DashboardPage() {
         onSuccess={handleGroupCreated}
       />
 
-      {/* Delete Group Confirmation Modal */}
-      {/* {showDeleteGroupConfirm && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-screen items-center justify-center p-4 text-center sm:p-0">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={handleCloseDeleteGroupConfirm} />
-            
-            <div className="relative transform overflow-hidden rounded-lg text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md">
-              <div className={`${cardDarkMode} bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4`}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
-                    <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Delete Group</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">This action cannot be undone</p>
-                  </div>
-                </div>
-
-                <div className="mb-6">
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    Are you sure you want to delete the group <span className="font-medium">"{groupToDelete?.name}"</span>?
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    This will permanently delete all expenses, settlements, and member data associated with this group.
-                  </p>
-                </div>
-
-                <div className="flex justify-end gap-3">
-                  <button
-                    onClick={handleCloseDeleteGroupConfirm}
-                    className="btn btn-secondary"
-                    disabled={isDeletingGroup}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={confirmDeleteGroup}
-                    className="btn btn-danger flex items-center gap-2"
-                    disabled={isDeletingGroup}
-                  >
-                    {isDeletingGroup ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Deleting...
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="h-4 w-4" />
-                        Delete Group
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )} */}
     </div>
   )
 }

@@ -12,7 +12,8 @@ import {
   getGroupExpenses, 
   changeGroupOwner,
   deleteGroup,
-  editGroup
+  editGroup,
+  exitGroup
 } from "./controllers/groups";
 import {createExpense, deleteExpense, editExpense, getExpense, updateExpenseShare} from "./controllers/expenses";
 import {createSettlement, getGroupBalances, getGroupSettlements} from "./controllers/settlements";
@@ -35,6 +36,7 @@ router.get('/groups', requireAuth, getUserGroups);
 router.get('/groups/:groupId', requireAuth, getGroupById);
 router.put('/groups/:groupId', requireAuth, editGroup);
 router.post('/groups/:groupId/invite', requireAuth, inviteMultipleMembers);
+router.delete("/groups/:groupId/members/me", requireAuth, exitGroup)
 
 // Group routes (auth and group owner required)
 router.delete('/groups/:groupId', requireAuth, requireGroupOwner, deleteGroup);

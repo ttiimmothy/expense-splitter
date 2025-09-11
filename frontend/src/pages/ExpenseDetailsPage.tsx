@@ -105,7 +105,7 @@ export default function ExpenseDetailsPage() {
    useEffect(() => {
     if (groupId) {
       socketService.connect()
-      socketService.joinGroup(groupId)
+      socketService.joinSocketGroup(groupId)
       
       const onExpenseUpdated = () => {
         refetch()
@@ -114,7 +114,7 @@ export default function ExpenseDetailsPage() {
       socketService.onExpenseUpdated(onExpenseUpdated)
 
       return () => {
-        socketService.leaveGroup(groupId)
+        socketService.leaveSocketGroup(groupId)
         socketService.off('expense-updated', onExpenseUpdated)
       }
     }

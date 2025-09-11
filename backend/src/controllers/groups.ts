@@ -155,7 +155,7 @@ export const findAvailableUsersEmail = async (req: Request, res: Response) => {
 
 export const deleteGroupMember = async (req: Request, res: Response) => {
   try {
-    const {memberId} = req.params
+    const {groupId, memberId} = req.params
 
     const member = await prisma.groupMember.findUnique({
       where: {
@@ -173,6 +173,7 @@ export const deleteGroupMember = async (req: Request, res: Response) => {
         id: memberId
       }
     })
+    io.to(`group-${groupId}`).emit("group-updated")
 
     res.json({message: "group member delete success"})
   } catch (e) {    
@@ -239,6 +240,7 @@ export const changeGroupOwner = async (req: Request, res: Response) => {
         throw new Error('Too many owners');
       }
     });
+    io.to(`group-${groupId}`).emit("group-updated")
   
     res.json({message: "group owner change success"})
   } catch (e) {
@@ -258,6 +260,7 @@ export const deleteGroup = async (req: Request, res: Response) => {
   await prisma.group.delete({
     where: {id: groupId}
   })
+  io.to(`group-${groupId}`).emit("group-updated")
 
   res.json({message: "group delete success"})
 }
@@ -271,4 +274,15 @@ export const editGroup = async (req: Request, res: Response) => {
   })
 
   res.json({message: "group update success"})
+}
+
+export const exitGroup = async (req: Request, res: Response) => {
+  const userId = req.user.id
+  const {groupId} = req.params
+  await prisma.groupMember.delete({
+    where: {userId_groupId: {userId, groupId}} 
+  })
+  io.to(`group-${groupId}`).emit("group-updated")
+
+  res.json({message: "exit group success"})
 }

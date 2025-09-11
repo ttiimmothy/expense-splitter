@@ -3,7 +3,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useState, useEffect } from 'react'
 import { socketService } from '../lib/socket'
-import { Plus, Users, DollarSign, ArrowLeft, Trash2, AlertTriangle, Crown, UserCheck, Settings, Edit3 } from 'lucide-react'
+import { Plus, Users, DollarSign, ArrowLeft, Trash2, AlertTriangle, Crown, UserCheck, Settings, Edit3, LogOut } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { toast } from 'react-hot-toast'
@@ -85,6 +85,8 @@ export default function GroupPage() {
   const [showDeleteGroupConfirm, setShowDeleteGroupConfirm] = useState(false)
   const [isDeletingGroup, setIsDeletingGroup] = useState(false)
   const [showEditGroupModal, setShowEditGroupModal] = useState(false)
+  // const [showExitConfirm, setShowExitConfirm] = useState(false)
+  const [isExiting, setIsExiting] = useState(false)
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
 
@@ -119,7 +121,7 @@ export default function GroupPage() {
   useEffect(() => {
     if (id) {
       socketService.connect()
-      socketService.joinGroup(id)
+      socketService.joinSocketGroup(id)
       
       const onExpenseCreated = () => {
         console.log("refetching expense")
@@ -139,7 +141,7 @@ export default function GroupPage() {
       socketService.onSettlementCreated(onSettlementCreated)
 
       return () => {
-        socketService.leaveGroup(id)
+        socketService.leaveSocketGroup(id)
         socketService.off('expense-created', onExpenseCreated)
         socketService.off('group-updated', onGroupUpdated)
         socketService.off('settlement-created', onSettlementCreated)
@@ -196,8 +198,38 @@ export default function GroupPage() {
     }
   }
 
+  // Exit group mutation
+  const exitGroupMutation = useMutation({
+    mutationFn: async () => {
+      const response = await api.delete(`/groups/${id}/members/me`)
+      return response.data
+    },
+    onSuccess: () => {
+      // toast.success('Successfully left the group!')
+      // Invalidate all group-related queries
+      queryClient.invalidateQueries({ queryKey: ['groups'] })
+      queryClient.invalidateQueries({ queryKey: ['group', id] })
+      // Navigate to dashboard
+      window.location.href = '/'
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || 'Failed to leave group'
+      toast.error(errorMessage)
+    }
+  })
+
+  const handleExitGroup = async () => {
+    setIsExiting(true)
+    try {
+      await exitGroupMutation.mutateAsync()
+    } finally {
+      setIsExiting(false)
+      // setShowExitConfirm(false)
+    }
+  }
+
   const handleCloseDeleteConfirm = () => {
-    setShowDeleteConfirm(false)
+    // setShowDeleteConfirm(false)
     setMemberToDelete(null)
   }
 
@@ -332,29 +364,22 @@ export default function GroupPage() {
           </div>
         )} */}
         <div className="flex gap-2">
-          {/* <button
-            onClick={() => setShowInviteModal(true)}
-            className="btn btn-secondary flex items-center gap-2"
-          >
-            <Users className="h-4 w-4" />
-            Invite
-          </button> */}
-          {/* {(
-            <button
-              onClick={handleEditGroup}
-              className="btn btn-secondary flex items-center gap-2"
-              title="Edit group details"
-            >
-              <Edit3 className="h-4 w-4" />
-              Edit Group
-            </button>
-          )} */}
+         
           <button
             onClick={() => setShowExpenseForm(true)}
             className="btn btn-primary flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
             Add Expense
+          </button>
+          <button
+            onClick={handleExitGroup}
+            className="btn btn-danger flex items-center gap-2"
+            disabled={isExiting}
+            title="Leave this group"
+          >
+            <LogOut className="h-4 w-4" />
+            Leave Group
           </button>
         </div>
       </div>
@@ -696,6 +721,7 @@ export default function GroupPage() {
         currentName={group?.name || ''}
         currentCurrency={group?.currency || 'USD'}
       />
+
     </div>
   )
 }

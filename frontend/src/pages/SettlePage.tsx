@@ -42,7 +42,7 @@ export default function SettlePage() {
   useEffect(() => {
     if (id) {
       socketService.connect()
-      socketService.joinGroup(id)
+      socketService.joinSocketGroup(id)
       
       const onSettlementCreated = () => {
         refetch()
@@ -51,7 +51,7 @@ export default function SettlePage() {
       socketService.onSettlementCreated(onSettlementCreated)
 
       return () => {
-        socketService.leaveGroup(id)
+        socketService.leaveSocketGroup(id)
         socketService.off('settlement-created', onSettlementCreated)
       }
     }
