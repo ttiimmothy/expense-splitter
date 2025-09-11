@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { toast } from 'react-hot-toast'
 import { truncateEmailMedium } from '../utils/emailUtils'
-import CreateExpenseModal from '../components/CreateExpenseModal'
+import AddExpenseModal from '../components/AddExpenseModal'
 import ExpenseTable from '../components/ExpenseTable'
 import InviteMemberModal from '../components/InviteMemberModal'
 import SettlementList from '../components/SettlementList'
@@ -45,7 +45,7 @@ interface Expense {
   }
   shares: Array<{
     id: string
-    amountPaid: number
+    amountOwed: number
     user: {
       id: string
       name: string
@@ -481,7 +481,7 @@ export default function GroupPage() {
         </div>
       </div>
 
-      <CreateExpenseModal
+      <AddExpenseModal
         isOpen={showExpenseForm}
         onClose={() => setShowExpenseForm(false)}
         groupId={id!}

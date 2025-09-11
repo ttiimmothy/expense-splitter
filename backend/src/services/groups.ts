@@ -182,6 +182,17 @@ export class GroupService {
     return prisma.expense.findMany({
       where: { groupId },
       include: {
+        payers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        },
         shares: {
           include: {
             user: {

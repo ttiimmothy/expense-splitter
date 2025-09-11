@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from './middleware/requireAuth';
-import {login, logout, register} from "./controllers/auth";
+import {login, logout, register, changePassword} from "./controllers/auth";
 import {getMe} from "./controllers/users";
 import {
   createGroup, 
@@ -24,6 +24,7 @@ const router = Router();
 router.post('/auth/login', login);
 router.post('/auth/register', register);
 router.post('/auth/logout', logout);
+router.put('/auth/change-password', requireAuth, changePassword);
 
 // User routes (auth required)
 router.get('/auth/me', requireAuth, getMe);

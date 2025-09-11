@@ -43,7 +43,7 @@ export default function Layout({ children }: LayoutProps) {
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'Profile', href: '/profile', icon: User },
+    // { name: 'Profile', href: '/profile', icon: User },
   ]
 
   return (
@@ -80,8 +80,8 @@ export default function Layout({ children }: LayoutProps) {
               )
             })}
           </nav>
-          <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex items-center">
+          <div className="border-t border-gray-200 dark:border-gray-700 p-2">
+            <Link className="flex items-center hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-white p-2 rounded-md" to="/profile">
               <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
                 <span className="text-sm font-medium text-primary-600 dark:text-primary-100">
                   {user?.name.charAt(0)}
@@ -91,10 +91,10 @@ export default function Layout({ children }: LayoutProps) {
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{user?.name}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</p>
               </div>
-            </div>
+            </Link>
             <button
               onClick={logout}
-              className="mt-3 w-full flex items-center px-2 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white rounded-md"
+              className="mt-3 w-full flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white rounded-md"
             >
               <LogOut className="mr-3 h-4 w-4" />
               Sign out
@@ -128,8 +128,8 @@ export default function Layout({ children }: LayoutProps) {
               )
             })}
           </nav>
-          <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex items-center">
+          <div className="border-t border-gray-200 dark:border-gray-700 p-2">
+            <Link className="flex items-center hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-white p-2 rounded-md" to="/profile">
               <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
                 <span className="text-sm font-medium text-primary-600 dark:text-primary-100">
                   {user?.name.charAt(0)}
@@ -139,10 +139,10 @@ export default function Layout({ children }: LayoutProps) {
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{user?.name}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</p>
               </div>
-            </div>
+            </Link>
             <button
               onClick={logout}
-              className="mt-3 w-full flex items-center px-2 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white rounded-md"
+              className="mt-3 w-full flex items-center py-2 px-4 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white rounded-md"
             >
               <LogOut className="mr-3 h-4 w-4" />
               Sign out

@@ -65,11 +65,18 @@ async function main() {
       description: 'Flight tickets',
       amount: 1200.00,
       split: 'EQUAL',
+      payers: {
+        create: [
+          { userId: user1.id, amount: 400.00 },
+          { userId: user2.id, amount: 400.00 },
+          { userId: user3.id, amount: 400.00 }
+        ]
+      },
       shares: {
         create: [
-          { userId: user1.id, amountPaid: 400.00 },
-          { userId: user2.id, amountPaid: 400.00 },
-          { userId: user3.id, amountPaid: 400.00 }
+          { userId: user1.id, amountOwed: 400.00 },
+          { userId: user2.id, amountOwed: 400.00 },
+          { userId: user3.id, amountOwed: 400.00 }
         ]
       }
     }
@@ -81,11 +88,18 @@ async function main() {
       description: 'Hotel accommodation',
       amount: 900.00,
       split: 'EQUAL',
+      payers: {
+        create: [
+          { userId: user1.id, amount: 300.00 },
+          { userId: user2.id, amount: 300.00 },
+          { userId: user3.id, amount: 300.00 }
+        ]
+      },
       shares: {
         create: [
-          { userId: user1.id, amountPaid: 300.00 },
-          { userId: user2.id, amountPaid: 300.00 },
-          { userId: user3.id, amountPaid: 300.00 }
+          { userId: user1.id, amountOwed: 300.00 },
+          { userId: user2.id, amountOwed: 300.00 },
+          { userId: user3.id, amountOwed: 300.00 }
         ]
       }
     }
@@ -96,12 +110,19 @@ async function main() {
       groupId: group.id,
       description: 'Dinner at fancy restaurant',
       amount: 150.00,
-      split: 'CUSTOM',
+      split: 'EQUAL',
+      payers: {
+        create: [
+          { userId: user1.id, amount: 50.00 },
+          { userId: user2.id, amount: 50.00 },
+          { userId: user3.id, amount: 50.00 }
+        ]
+      },
       shares: {
         create: [
-          { userId: user1.id, amountPaid: 50.00 },
-          { userId: user2.id, amountPaid: 50.00 },
-          { userId: user3.id, amountPaid: 50.00 }
+          { userId: user1.id, amountOwed: 50.00 },
+          { userId: user2.id, amountOwed: 50.00 },
+          { userId: user3.id, amountOwed: 50.00 }
         ]
       }
     }

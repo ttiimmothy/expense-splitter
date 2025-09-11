@@ -6,15 +6,25 @@ export interface CreateExpenseData {
   description: string;
   amount: number;
   split: 'EQUAL' | 'CUSTOM';
+  payers: Array<{
+    userId: string;
+    amount: number;
+  }>;
   shares?: Array<{
     userId: string;
-    amountPaid: number;
+    amountOwed: number;
   }>;
 }
 
 export class ExpenseService {
   async createExpense(data: CreateExpenseData) {
-    const { groupId, description, amount, split, shares } = data;
+    const { groupId, description, amount, split, payers, shares } = data;
+
+    // Validate payers amount matches total amount
+    const totalPaid = payers.reduce((sum, payer) => sum + payer.amount, 0);
+    if (Math.abs(totalPaid - amount) > 0.01) {
+      throw new Error('Total amount paid by payers must equal expense amount');
+    }
 
     // Get group members
     const groupMembers = await prisma.groupMember.findMany({
@@ -34,13 +44,13 @@ export class ExpenseService {
     }
 
     // Calculate shares
-    let expenseShares: Array<{ userId: string; amountPaid: number }> = [];
+    let expenseShares: Array<{ userId: string; amountOwed: number }> = [];
 
     if (split === 'EQUAL') {
       const amountPerPerson = amount / groupMembers.length;
       expenseShares = groupMembers.map(member => ({
         userId: member.user.id,
-        amountPaid: amountPerPerson
+        amountOwed: amountPerPerson
       }));
     } else if (split === 'CUSTOM' && shares) {
       expenseShares = shares;
@@ -48,21 +58,38 @@ export class ExpenseService {
       throw new Error('Custom split requires shares data');
     }
 
-    // Create expense with shares
+    // Create expense with payers and shares
     const expense = await prisma.expense.create({
       data: {
         groupId,
         description,
         amount: new Decimal(amount),
         split,
+        payers: {
+          create: payers.map(payer => ({
+            userId: payer.userId,
+            amount: new Decimal(payer.amount)
+          }))
+        },
         shares: {
           create: expenseShares.map(share => ({
             userId: share.userId,
-            amountPaid: new Decimal(share.amountPaid)
+            amountOwed: new Decimal(share.amountOwed)
           }))
         }
       },
       include: {
+        payers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        },
         shares: {
           include: {
             user: {

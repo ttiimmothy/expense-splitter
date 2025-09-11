@@ -36,18 +36,24 @@ describe('SettlementService', () => {
       const mockExpenses = [
         {
           amount: 300,
+          payers: [
+            { user: { id: 'user1' }, amount: 300 },
+          ],
           shares: [
-            { user: { id: 'user1' }, amountPaid: 100 },
-            { user: { id: 'user2' }, amountPaid: 100 },
-            { user: { id: 'user3' }, amountPaid: 100 },
+            { user: { id: 'user1' }, amountOwed: 100 },
+            { user: { id: 'user2' }, amountOwed: 100 },
+            { user: { id: 'user3' }, amountOwed: 100 },
           ],
         },
         {
           amount: 150,
+          payers: [
+            { user: { id: 'user2' }, amount: 150 },
+          ],
           shares: [
-            { user: { id: 'user1' }, amountPaid: 50 },
-            { user: { id: 'user2' }, amountPaid: 50 },
-            { user: { id: 'user3' }, amountPaid: 50 },
+            { user: { id: 'user1' }, amountOwed: 50 },
+            { user: { id: 'user2' }, amountOwed: 50 },
+            { user: { id: 'user3' }, amountOwed: 50 },
           ],
         },
       ]
@@ -59,9 +65,43 @@ describe('SettlementService', () => {
       const balances = await settlementService.getGroupBalances('group1', 'user1')
 
       expect(balances).toHaveLength(3)
-      expect(balances.find(b => b.userId === 'user1')?.netBalance).toBe(0)
-      expect(balances.find(b => b.userId === 'user2')?.netBalance).toBe(0)
-      expect(balances.find(b => b.userId === 'user3')?.netBalance).toBe(0)
+      expect(balances.find(b => b.userId === 'user1')?.netBalance).toBe(150) // Paid 300, owes 150
+      expect(balances.find(b => b.userId === 'user2')?.netBalance).toBe(0)  // Paid 150, owes 150
+      expect(balances.find(b => b.userId === 'user3')?.netBalance).toBe(-150) // Paid 0, owes 150
+    })
+
+    it('should calculate balances correctly with multiple payers', async () => {
+      const mockMembers = [
+        { user: { id: 'user1', name: 'Alice' } },
+        { user: { id: 'user2', name: 'Bob' } },
+        { user: { id: 'user3', name: 'Charlie' } },
+      ]
+
+      const mockExpenses = [
+        {
+          amount: 300,
+          payers: [
+            { user: { id: 'user1' }, amount: 200 },
+            { user: { id: 'user2' }, amount: 100 },
+          ],
+          shares: [
+            { user: { id: 'user1' }, amountOwed: 100 },
+            { user: { id: 'user2' }, amountOwed: 100 },
+            { user: { id: 'user3' }, amountOwed: 100 },
+          ],
+        },
+      ]
+
+      ;(prisma.groupMember.findUnique as jest.Mock).mockResolvedValue({})
+      ;(prisma.groupMember.findMany as jest.Mock).mockResolvedValue(mockMembers)
+      ;(prisma.expense.findMany as jest.Mock).mockResolvedValue(mockExpenses)
+
+      const balances = await settlementService.getGroupBalances('group1', 'user1')
+
+      expect(balances).toHaveLength(3)
+      expect(balances.find(b => b.userId === 'user1')?.netBalance).toBe(100) // Paid 200, owes 100
+      expect(balances.find(b => b.userId === 'user2')?.netBalance).toBe(0)   // Paid 100, owes 100
+      expect(balances.find(b => b.userId === 'user3')?.netBalance).toBe(-100) // Paid 0, owes 100
     })
   })
 

@@ -17,14 +17,18 @@ interface Expense {
   amount: number
   split: string
   createdAt: string
-  payer: {
+  payers: Array<{
     id: string
-    name: string
-    email: string
-  }
+    amount: number
+    user: {
+      id: string
+      name: string
+      email: string
+    }
+  }>
   shares: Array<{
     id: string
-    amountPaid: number
+    amountOwed: number
     user: {
       id: string
       name: string
@@ -116,7 +120,7 @@ export default function ExpenseDetailsPage() {
     }
   }, [groupId, refetch])
 
-  const handleSplitChange = async (splitType: string, newShares: { userId: string; amountPaid: number }[]) => {
+  const handleSplitChange = async (splitType: string, newShares: { userId: string; amountOwed: number }[]) => {
     if (!expense || !groupId || !expenseId) return
 
     setIsUpdatingSplit(true)
@@ -131,7 +135,7 @@ export default function ExpenseDetailsPage() {
 
           return {
             id: `temp-${share.userId}`, // Temporary ID for optimistic update
-            amountPaid: share.amountPaid,
+            amountOwed: share.amountOwed,
             user: {
               id: user.id,
               name: user.name,
@@ -264,6 +268,67 @@ export default function ExpenseDetailsPage() {
             </div>
           </div>
 
+          {/* Payer Information */}
+          <div className={`card ${cardDarkMode}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                <User className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Paid by</h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {expense.payers && expense.payers.length > 0 
+                    ? `${expense.payers.length} payer${expense.payers.length !== 1 ? 's' : ''}`
+                    : 'Single payer'
+                  }
+                </p>
+              </div>
+            </div>
+            
+            {expense.payers && expense.payers.length > 0 && (
+              <div className="space-y-3">
+                {expense.payers.map((payer, index) => {
+                  const member = group?.members.find(m => m.user.id === payer.user.id)
+                  return (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                          <span className="text-xs font-medium text-green-600">
+                            {member?.user.name.charAt(0) || '?'}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {member?.user.name || 'Unknown User'}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {member?.user.email || 'No email'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold text-gray-900 dark:text-white">
+                          ${Number(payer.amount).toFixed(2)}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          Amount paid
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+                <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-gray-900 dark:text-white">Total paid:</span>
+                    <span className="text-xl font-bold text-green-600">
+                      ${expense.payers.reduce((total, payer) => total + Number(payer.amount), 0).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Split Details */}
           <div className={`card ${cardDarkMode}`}>
             <div className="flex items-center justify-between mb-4">
@@ -301,10 +366,10 @@ export default function ExpenseDetailsPage() {
                   </div>
                   <div className="text-right">
                     <div className="font-semibold text-gray-900 dark:text-white">
-                      ${(typeof share.amountPaid === 'string' ? parseFloat(share.amountPaid) : share.amountPaid || 0).toFixed(2)}
+                      ${(typeof share.amountOwed === 'string' ? parseFloat(share.amountOwed) : share.amountOwed || 0).toFixed(2)}
                     </div>
                     <div className={`text-xs text-gray-500 ${cardTextDarkMode}`}>
-                      {((typeof share.amountPaid === 'string' && typeof expense.amount === 'string' ? (parseFloat(share.amountPaid) / parseFloat(expense.amount)) : share.amountPaid / expense.amount || 0) * 100).toFixed(1)}%
+                      {((typeof share.amountOwed === 'string' && typeof expense.amount === 'string' ? (parseFloat(share.amountOwed) / parseFloat(expense.amount)) : share.amountOwed / expense.amount || 0) * 100).toFixed(1)}%
                     </div>
                   </div>
                 </div>

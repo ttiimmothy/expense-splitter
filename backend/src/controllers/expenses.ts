@@ -11,9 +11,13 @@ const createExpenseSchema = z.object({
   description: z.string().min(1),
   amount: z.number().positive(),
   split: z.enum(['EQUAL', 'CUSTOM']),
+  payers: z.array(z.object({
+    userId: z.string(),
+    amount: z.number().positive()
+  })),
   shares: z.array(z.object({
     userId: z.string(),
-    amountPaid: z.number()
+    amountOwed: z.number()
   })).optional()
 });
 
@@ -26,8 +30,9 @@ export const createExpense = async (req: Request, res: Response) => {
     const { groupId } = req.params;
     const parsedBody = {
       ...req.body, 
-      amount: parseFloat(req.body.amount), 
-      shares: req.body.shares.map((share) => ({...share, amountPaid: parseFloat(share.amountPaid)}))
+      amount: parseFloat(req.body.amount),
+      payers: req.body.payers.map((payer) => ({...payer, amount: parseFloat(payer.amount)})),
+      shares: req.body.shares?.map((share) => ({...share, amountOwed: parseFloat(share.amountOwed)}))
     }
     const data = createExpenseSchema.parse(parsedBody);
     
@@ -54,6 +59,57 @@ export const createExpense = async (req: Request, res: Response) => {
       if (error.message === 'Custom split requires shares data') {
         return res.status(400).json({ error: error.message });
       }
+      if (error.message === 'Total amount paid by payers must equal expense amount') {
+        return res.status(400).json({ error: error.message });
+      }
+    }
+    
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const getGroupExpenses = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { groupId } = req.params;
+    const expenses = await prisma.expense.findMany({
+      where: { groupId },
+      include: {
+        payers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        },
+        shares: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    res.json({ expenses });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Access denied') {
+      return res.status(403).json({ error: error.message });
     }
     
     res.status(500).json({ error: 'Internal server error' });
@@ -66,6 +122,17 @@ export const getExpense = async (req: Request, res: Response) => {
     const expense = await prisma.expense.findUnique({
       where: {id: expenseId},
       include: {
+        payers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        },
         shares: {
           include: {
             user: {
@@ -100,12 +167,12 @@ export const updateExpenseShare = async (req: Request, res: Response) => {
         shares: {
           update: shares.map((share) => ({
             where: {expenseId_userId: {expenseId, userId: share.userId}},
-            data: {amountPaid: new Decimal(share.amountPaid)}
+            data: {amountOwed: new Decimal(share.amountOwed)}
           }))
         }
       }
     })
-    io.to(`$group-${groupId}`).emit("expense-updated")
+    io.to(`group-${groupId}`).emit("expense-updated")
 
     res.json({message: "Expense split and shares update success"})
   } catch (e) {
@@ -125,7 +192,7 @@ export const deleteExpense = async (req: Request, res: Response) => {
       where: {id: expenseId}
     })
     
-    io.to(`$group-${groupId}`).emit("expense-updated")
+    io.to(`group-${groupId}`).emit("expense-updated")
 
     res.json({message: "expense delete success"})
   } catch (e) {
@@ -141,31 +208,42 @@ export const deleteExpense = async (req: Request, res: Response) => {
 export const editExpense = async (req: Request, res: Response) => {
   try {
     const {groupId, expenseId} = req.params
-    const {description, amount, split, shares} = req.body
+    const {description, amount, split, payers, shares} = req.body
+    
+    // Validate payers amount matches total amount
+    if (payers) {
+      const totalPaid = payers.reduce((sum, payer) => sum + parseFloat(payer.amount), 0);
+      if (Math.abs(totalPaid - parseFloat(amount)) > 0.01) {
+        return res.status(400).json({ error: 'Total amount paid by payers must equal expense amount' });
+      }
+    }
+
     await prisma.expense.update({
       where: {id: expenseId},
-      data:
-      {
+      data: {
         description,
-        amount,
+        amount: new Decimal(amount),
         split,
-        shares: {
-          upsert: shares.map((share) => ({
-            where: {expenseId_userId: {expenseId, userId: share.userId}},
-            create: { 
-              userId: share.userId,
-              amountPaid: new Decimal(share.amountPaid)
-            },
-            update: { 
-              amountPaid: new Decimal(share.amountPaid)
-            }
+        payers: payers ? {
+          deleteMany: {}, // Remove all existing payers
+          create: payers.map((payer) => ({
+            userId: payer.userId,
+            amount: new Decimal(parseFloat(payer.amount))
           }))
-        }
+        } : undefined,
+        shares: shares ? {
+          deleteMany: {}, // Remove all existing shares
+          create: shares.map((share) => ({
+            userId: share.userId,
+            amountOwed: new Decimal(parseFloat(share.amountOwed))
+          }))
+        } : undefined
       }
     })
-    io.to(`$group-${groupId}`).emit("expense-updated")
+    
+    io.to(`group-${groupId}`).emit("expense-updated")
 
-    res.json({message: "Expense split and shares update success"})
+    res.json({message: "Expense update success"})
   } catch (e) {
     if (e instanceof Error && e.message === 'Access denied') {
       return res.status(403).json({ error: e.message });

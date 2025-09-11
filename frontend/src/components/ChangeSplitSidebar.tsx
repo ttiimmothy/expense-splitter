@@ -15,7 +15,7 @@ interface Member {
 
 interface Share {
   id: string
-  amountPaid: number
+  amountOwed: number
   user: {
     id: string
     name: string
@@ -29,7 +29,7 @@ interface ChangeSplitSidebarProps {
   currentShares: Share[]
   members: Member[]
   totalAmount: number
-  onSplitChange: (splitType: string, newShares: { userId: string; amountPaid: number }[]) => Promise<void>
+  onSplitChange: (splitType: string, newShares: { userId: string; amountOwed: number }[]) => Promise<void>
   isLoading?: boolean
 }
 
@@ -54,7 +54,7 @@ export default function ChangeSplitSidebar({
       
       const amounts: Record<string, number> = {}
       currentShares.forEach(share => {
-        amounts[share.user.id] = share.amountPaid
+        amounts[share.user.id] = share.amountOwed
       })
       setCustomAmounts(amounts)
     }
@@ -102,7 +102,7 @@ export default function ChangeSplitSidebar({
   const handleSave = async () => {
     const newShares = Array.from(selectedMembers).map(userId => ({
       userId,
-      amountPaid: splitType === 'EQUAL' ? calculateEqualAmount() : (customAmounts[userId] || 0)
+      amountOwed: splitType === 'EQUAL' ? calculateEqualAmount() : (customAmounts[userId] || 0)
     }))
     
     await onSplitChange(splitType, newShares)
@@ -116,7 +116,7 @@ export default function ChangeSplitSidebar({
     
     const amounts: Record<string, number> = {}
     currentShares.forEach(share => {
-      amounts[share.user.id] = share.amountPaid
+      amounts[share.user.id] = share.amountOwed
     })
     setCustomAmounts(amounts)
     setSplitType('EQUAL')

@@ -27,10 +27,11 @@ interface ExpenseFormProps {
 
 // Using ExpenseForm type from schema instead of local interface
 
-export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId, groupMembers }: ExpenseFormProps) {
+export default function AddExpenseModal({ isOpen, onClose, onSuccess, groupId, groupMembers }: ExpenseFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [splitType, setSplitType] = useState<'EQUAL' | 'CUSTOM'>('EQUAL')
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set())
+  const [payers, setPayers] = useState<Array<{ userId: string; amount: number }>>([])
   const queryClient = useQueryClient()
   
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<CreateExpenseForm>({
@@ -40,7 +41,8 @@ export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId
       description: '',
       amount: 0,
       split: 'EQUAL',
-      shares: []
+      shares: [],
+      payers: []
     }
   })
 
@@ -82,12 +84,26 @@ export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId
         return
       }
 
+      if (payers.length === 0) {
+        toast.error('Please add at least one payer for the expense')
+        return
+      }
+
+      const totalPaid = getTotalPaidAmount()
+      if (Math.abs(totalPaid - data.amount) > 0.01) {
+        toast.error(`Total paid amount ($${totalPaid.toFixed(2)}) must equal the expense amount ($${data.amount.toFixed(2)})`)
+        return
+      }
+
+      // Set payers data
+      data.payers = payers
+
       // Calculate shares for equal split
       if (data.split === 'EQUAL' && data.amount && selectedMembersList.length > 0) {
         const amountPerPerson = data.amount / selectedMembersList.length
         data.shares = selectedMembersList.map(member => ({
           userId: member.user.id,
-          amountPaid: amountPerPerson
+          amountOwed: amountPerPerson
         }))
       } else if (data.split === 'CUSTOM') {
         // Include all selected members, even if they have $0 amount
@@ -96,7 +112,7 @@ export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId
           const existingShare = data.shares.find(share => share.userId === member.user.id)
           return {
             userId: member.user.id,
-            amountPaid: existingShare ? existingShare.amountPaid : 0
+            amountOwed: existingShare ? existingShare.amountOwed : 0
           }
         })
       }
@@ -127,7 +143,7 @@ export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId
         const existingShare = currentShares.find(share => share.userId === memberId)
         newShares.push({
           userId: memberId,
-          amountPaid: existingShare ? existingShare.amountPaid : 0
+          amountOwed: existingShare ? existingShare.amountOwed : 0
         })
       }
       
@@ -162,6 +178,7 @@ export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId
     reset()
     setSplitType('EQUAL')
     setSelectedMembers(new Set())
+    setPayers([])
     onClose()
   }
 
@@ -171,23 +188,47 @@ export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId
     
     if (existingIndex >= 0) {
       const newShares = [...currentShares]
-      newShares[existingIndex] = { userId, amountPaid: amount }
+      newShares[existingIndex] = { userId, amountOwed: amount }
       setValue('shares', newShares)
     } else {
-      setValue('shares', [...currentShares, { userId, amountPaid: amount }])
+      setValue('shares', [...currentShares, { userId, amountOwed: amount }])
     }
   }
 
   const getCustomShare = (userId: string) => {
     const shares = watch('shares') || []
     const share = shares.find(s => s.userId === userId)
-    return share?.amountPaid || 0
+    return share?.amountOwed || 0
   }
 
   const calculateTotal = () => {
     const selectedMembersList = groupMembers.filter(member => selectedMembers.has(member.user.id))
     const total = selectedMembersList.reduce((sum, member) => sum + getCustomShare(member.user.id), 0)
     return Math.round(total * 100) / 100
+  }
+
+  // Payer management functions
+  const addPayer = () => {
+    if (groupMembers.length > 0) {
+      setPayers([...payers, { userId: groupMembers[0].user.id, amount: 0 }])
+    }
+  }
+
+  const removePayer = (index: number) => {
+    setPayers(payers.filter((_, i) => i !== index))
+  }
+
+  const updatePayer = (index: number, field: 'userId' | 'amount', value: string | number) => {
+    const newPayers = [...payers]
+    newPayers[index] = {
+      ...newPayers[index],
+      [field]: field === 'amount' ? Number(value) : value
+    }
+    setPayers(newPayers)
+  }
+
+  const getTotalPaidAmount = () => {
+    return payers.reduce((total, payer) => total + (payer.amount || 0), 0)
   }
 
   const getSelectedMembersCount = () => {
@@ -245,6 +286,83 @@ export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId
                     <p className="mt-1 text-sm text-red-600">{errors.amount.message}</p>
                   )}
                 </div>
+              </div>
+
+              {/* Multiple Payers Selection */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Who paid? ({payers.length} payer{payers.length !== 1 ? 's' : ''})
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addPayer}
+                    className="btn btn-secondary flex items-center gap-2 text-sm"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Payer
+                  </button>
+                </div>
+                
+                {payers.length > 0 && (
+                  <div className="space-y-3 max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                    {payers.map((payer, index) => (
+                      <div key={index} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div className="flex-1">
+                          <select
+                            value={payer.userId}
+                            onChange={(e) => updatePayer(index, 'userId', e.target.value)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          >
+                            {groupMembers.map((member) => (
+                              <option key={member.user.id} value={member.user.id}>
+                                {member.user.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0.01"
+                            value={payer.amount || ''}
+                            onChange={(e) => updatePayer(index, 'amount', e.target.value)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removePayer(index)}
+                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {payers.length > 0 && (
+                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-700 dark:text-gray-300">Total paid:</span>
+                      <span className="font-semibold text-blue-600 dark:text-blue-400">
+                        ${getTotalPaidAmount().toFixed(2)}
+                      </span>
+                    </div>
+                    {Math.abs(getTotalPaidAmount() - watchedAmount) > 0.01 && (
+                      <div className="mt-1 text-xs text-red-600 dark:text-red-400">
+                        Must equal expense amount (${watchedAmount?.toFixed(2) || '0.00'})
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {errors.payers && (
+                  <p className="mt-1 text-sm text-red-600">{errors.payers.message}</p>
+                )}
               </div>
 
               {/* Member Selection */}
@@ -325,7 +443,8 @@ export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId
                 </div>
               </div>
 
-              {splitType === 'EQUAL' && getSelectedMembersCount() > 0 && (
+              {/* {splitType === 'EQUAL' && watchedAmount !== null || watchedAmount !== undefined && getSelectedMembersCount() > 0 && ( */}
+              {splitType === 'EQUAL' && typeof watchedAmount === 'number' && watchedAmount > 0 && getSelectedMembersCount() > 0 && (
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                   <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Equal Split Preview</h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -365,7 +484,8 @@ export default function CreateExpenseModal({ isOpen, onClose, onSuccess, groupId
                         </div>
                       ))}
                   </div>
-                  {watchedAmount && (
+                  {/* {watchedAmount !== null || watchedAmount !== undefined */}
+                  {typeof watchedAmount === 'number' && watchedAmount > 0 && (
                     <div className={`mt-3 text-sm text-gray-600 dark:${cardTextDarkMode}`}>
                       Total: ${calculateTotal()}
                       {Number(watchedAmount as any as string) !== calculateTotal() && (

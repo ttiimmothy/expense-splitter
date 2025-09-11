@@ -18,6 +18,7 @@ export interface SettlementSuggestion {
 
 type ExpenseWithSharesAndUser =  Prisma.ExpenseGetPayload<{
   include: {
+    payers: { include: { user: true } },
     shares: { include: { user: true } }
   }
 }>
@@ -59,6 +60,15 @@ export class SettlementService {
     const expenses = await prisma.expense.findMany({
       where: { groupId },
       include: {
+        payers: {
+          include: {
+            user: {
+              select: {
+                id: true
+              }
+            }
+          }
+        },
         shares: {
           include: {
             user: {
@@ -84,13 +94,19 @@ export class SettlementService {
 
     // Calculate balances from expenses
     expenses.forEach((expense: ExpenseWithSharesAndUser) => {
-      // Each share holder gets debited for what they pay
-      // .div still stay Decimal, need toNumber() for calculation
-      const average = Math.round(Number(expense.amount) / expense.shares.length * 100) / 100
+      // Each payer gets credited for what they paid
+      expense.payers.forEach(payer => {
+        const payerBalance = balances.get(payer.user.id);
+        if (payerBalance) {
+          payerBalance.balance += Number(payer.amount);
+        }
+      });
+
+      // Each share holder gets debited for what they owe
       expense.shares.forEach(share => {
         const shareBalance = balances.get(share.user.id);
         if (shareBalance) {
-          shareBalance.balance += Math.round(Number(share.amountPaid) * 100) / 100 - average;
+          shareBalance.balance -= Number(share.amountOwed);
         }
       });
     });

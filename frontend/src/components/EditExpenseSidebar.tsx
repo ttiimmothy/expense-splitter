@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { toast } from 'react-hot-toast'
-import { X, Save, DollarSign, Users, Check } from 'lucide-react'
+import { X, Save, DollarSign, Users, Check, Plus } from 'lucide-react'
 import { cardDarkMode, cardTextDarkMode } from '@/constants/colors'
 import { createExpenseSchema, type CreateExpenseForm } from '../schemas/expense'
 import { truncateEmailExtra } from '../utils/emailUtils'
@@ -20,9 +20,19 @@ interface Member {
   }
 }
 
+interface Payer {
+  id: string
+  amount: number
+  user: {
+    id: string
+    name: string
+    email: string
+  }
+}
+
 interface Share {
   id: string
-  amountPaid: number
+  amountOwed: number
   user: {
     id: string
     name: string
@@ -36,11 +46,7 @@ interface Expense {
   amount: number
   split: string
   createdAt: string
-  payer: {
-    id: string
-    name: string
-    email: string
-  }
+  payers: Payer[]
   shares: Share[]
 }
 
@@ -67,6 +73,7 @@ export default function EditExpenseSidebar({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [splitType, setSplitType] = useState<'EQUAL' | 'CUSTOM'>('EQUAL')
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set())
+  const [payers, setPayers] = useState<Array<{ userId: string; amount: number }>>([])
   const queryClient = useQueryClient()
 
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<CreateExpenseForm>({
@@ -78,7 +85,11 @@ export default function EditExpenseSidebar({
       split: expense.split as 'EQUAL' | 'CUSTOM',
       shares: expense.shares.map(share => ({
         userId: share.user.id,
-        amountPaid: Number(share.amountPaid)
+        amountOwed: Number(share.amountOwed)
+      })),
+      payers: expense.payers.map(payer => ({
+        userId: payer.user.id,
+        amount: Number(payer.amount)
       }))
     }
   })
@@ -86,26 +97,61 @@ export default function EditExpenseSidebar({
   const watchedAmount = watch('amount')
   const watchedSplit = watch('split')
 
+  // Payer management functions
+  const addPayer = () => {
+    if (members.length > 0) {
+      setPayers([...payers, { userId: members[0].user.id, amount: 0 }])
+    }
+  }
+
+  const removePayer = (index: number) => {
+    setPayers(payers.filter((_, i) => i !== index))
+  }
+
+  const updatePayer = (index: number, field: 'userId' | 'amount', value: string | number) => {
+    const newPayers = [...payers]
+    newPayers[index] = {
+      ...newPayers[index],
+      [field]: field === 'amount' ? Number(value) : value
+    }
+    setPayers(newPayers)
+  }
+
+  const getTotalPaidAmount = () => {
+    return payers.reduce((total, payer) => total + (payer.amount || 0), 0)
+  }
+
   // Initialize form data when expense changes
   useEffect(() => {
     if (expense) {
       // Ensure all numeric values are properly converted to numbers
       const processedShares = expense.shares.map(share => ({
         userId: share.user.id,
-        amountPaid: Number(share.amountPaid)
+        amountOwed: Number(share.amountOwed)
       }))
       
       reset({
         description: expense.description,
         amount: Number(expense.amount),
         split: expense.split as 'EQUAL' | 'CUSTOM',
-        shares: processedShares
+        shares: processedShares,
+        payers: expense.payers.map(payer => ({
+          userId: payer.user.id,
+          amount: Number(payer.amount)
+        }))
       })
       setSplitType(expense.split as 'EQUAL' | 'CUSTOM')
       
       // Initialize selected members from current shares
       const memberIds = new Set(expense.shares.map(share => share.user.id))
       setSelectedMembers(memberIds)
+      
+      // Initialize payers
+      setPayers(expense.payers.map(payer => ({
+        userId: payer.user.id,
+        amount: Number(payer.amount)
+      })))
+      
     }
   }, [expense, reset])
 
@@ -138,12 +184,26 @@ export default function EditExpenseSidebar({
         return
       }
 
+      if (payers.length === 0) {
+        toast.error('Please add at least one payer for the expense')
+        return
+      }
+
+      const totalPaid = getTotalPaidAmount()
+      if (Math.abs(totalPaid - data.amount) > 0.01) {
+        toast.error(`Total paid amount ($${totalPaid.toFixed(2)}) must equal the expense amount ($${data.amount.toFixed(2)})`)
+        return
+      }
+
+      // Set payers data
+      data.payers = payers
+
       // Calculate shares for equal split
       if (data.split === 'EQUAL' && data.amount && selectedMembersList.length > 0) {
         const amountPerPerson = data.amount / selectedMembersList.length
         data.shares = selectedMembersList.map(member => ({
           userId: member.user.id,
-          amountPaid: amountPerPerson
+          amountOwed: amountPerPerson
         }))
       } else if (data.split === 'CUSTOM') {
         // Include all selected members, even if they have $0 amount
@@ -151,7 +211,7 @@ export default function EditExpenseSidebar({
           const existingShare = data.shares.find(share => share.userId === member.user.id)
           return {
             userId: member.user.id,
-            amountPaid: existingShare ? Number(existingShare.amountPaid) : 0
+            amountOwed: existingShare ? Number(existingShare.amountOwed) : 0
           }
         })
       }
@@ -178,17 +238,17 @@ export default function EditExpenseSidebar({
     
     if (existingIndex >= 0) {
       const newShares = [...currentShares]
-      newShares[existingIndex] = { userId, amountPaid: amount }
+      newShares[existingIndex] = { userId, amountOwed: amount }
       setValue('shares', newShares)
     } else {
-      setValue('shares', [...currentShares, { userId, amountPaid: amount }])
+      setValue('shares', [...currentShares, { userId, amountOwed: amount }])
     }
   }
 
   const getCustomShare = (userId: string) => {
     const shares = watch('shares') || []
     const share = shares.find(s => s.userId === userId)
-    return share?.amountPaid || 0
+    return share?.amountOwed || 0
   }
 
   const calculateTotal = () => {
@@ -205,20 +265,30 @@ export default function EditExpenseSidebar({
     // Ensure all numeric values are properly converted to numbers
     const processedShares = expense.shares.map(share => ({
       userId: share.user.id,
-      amountPaid: Number(share.amountPaid)
+      amountOwed: Number(share.amountOwed)
     }))
     
     reset({
       description: expense.description,
       amount: Number(expense.amount),
       split: expense.split as 'EQUAL' | 'CUSTOM',
-      shares: processedShares
+      shares: processedShares,
+      payers: expense.payers.map(payer => ({
+        userId: payer.user.id,
+        amount: Number(payer.amount)
+      }))
     })
     setSplitType(expense.split as 'EQUAL' | 'CUSTOM')
     
     // Initialize selected members from current shares
     const memberIds = new Set(expense.shares.map(share => share.user.id))
     setSelectedMembers(memberIds)
+    
+      // Reset payers
+      setPayers(expense.payers.map(payer => ({
+        userId: payer.user.id,
+        amount: Number(payer.amount)
+      })))
     onClose()
   }
 
@@ -282,6 +352,83 @@ export default function EditExpenseSidebar({
                 />
                 {errors.amount && (
                   <p className="mt-1 text-sm text-red-600">{errors.amount.message}</p>
+                )}
+              </div>
+
+              {/* Multiple Payers Selection */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Who paid? ({payers.length} payer{payers.length !== 1 ? 's' : ''})
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addPayer}
+                    className="btn btn-secondary flex items-center gap-2 text-sm"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Payer
+                  </button>
+                </div>
+                
+                {payers.length > 0 && (
+                  <div className="space-y-3 max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                    {payers.map((payer, index) => (
+                      <div key={index} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div className="flex-1">
+                          <select
+                            value={payer.userId}
+                            onChange={(e) => updatePayer(index, 'userId', e.target.value)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          >
+                            {members.map((member) => (
+                              <option key={member.user.id} value={member.user.id}>
+                                {member.user.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0.01"
+                            value={payer.amount || ''}
+                            onChange={(e) => updatePayer(index, 'amount', e.target.value)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removePayer(index)}
+                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {payers.length > 0 && (
+                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-700 dark:text-gray-300">Total paid:</span>
+                      <span className="font-semibold text-blue-600 dark:text-blue-400">
+                        ${getTotalPaidAmount().toFixed(2)}
+                      </span>
+                    </div>
+                    {Math.abs(getTotalPaidAmount() - watchedAmount) > 0.01 && (
+                      <div className="mt-1 text-xs text-red-600 dark:text-red-400">
+                        Must equal expense amount (${watchedAmount?.toFixed(2) || '0.00'})
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {errors.payers && (
+                  <p className="mt-1 text-sm text-red-600">{errors.payers.message}</p>
                 )}
               </div>
 

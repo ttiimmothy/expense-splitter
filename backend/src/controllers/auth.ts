@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { UserService } from '../services/users';
+import {prisma} from "@/db/prisma";
+import bcrypt, {compare} from "bcryptjs";
 
 const userService = new UserService();
 
@@ -14,6 +16,12 @@ const loginSchema = z.object({
   email: z.email(),
   password: z.string().min(1)
 });
+
+const newPasswordSchema = z.string()
+  .min(1, 'New password is required')
+  .min(2, 'New password must be at least 2 characters')
+  .max(100, 'New password must be less than 100 characters')
+
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -96,4 +104,40 @@ export const logout = async (req: Request, res: Response) => {
     sameSite: 'none'     // Must match login
   });
   res.json({ message: 'Logged out successfully' });
+};
+
+export const changePassword = async (req: Request, res: Response) => {
+  try {
+    const {currentPassword, newPassword} = req.body
+    const user = await prisma.user.findUnique({
+      where: {id: req.user.id}
+    })
+
+    if (user.password) {
+      const verifyPassword = await compare(currentPassword, user.password)
+      if (!verifyPassword) {
+        res.status(400).json({error: "wrong credentials"})
+        return
+      }
+    }
+
+    const password = newPasswordSchema.parse(newPassword)
+    const hashPassword = await bcrypt.hash(password, 12)
+    await prisma.user.update({
+      where: {id: req.user.id},
+      data: {password: hashPassword}
+    })
+
+    res.json({message: "password update success"})
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      res.status(400).json({
+        error: 'Validation error',
+        details: e
+      });
+      return
+    }
+
+    res.status(500).json({error: "Internal server error"})
+  }
 };

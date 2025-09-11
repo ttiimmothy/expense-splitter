@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import {cardDarkMode} from "@/constants/colors";
 import { useAuthStore } from '../stores/authStore'
-import { LogOut, User, Mail, Calendar } from 'lucide-react'
+import { LogOut, User, Mail, Calendar, Key } from 'lucide-react'
+import ChangePasswordSidebar from '../components/ChangePasswordSidebar'
 
 export default function ProfilePage() {
   const { user, logout } = useAuthStore()
+  const [showChangePasswordSidebar, setShowChangePasswordSidebar] = useState(false)
 
   const handleLogout = async () => {
     await logout()
@@ -66,15 +69,22 @@ export default function ProfilePage() {
       </div>
 
       <div className={`card ${cardDarkMode}`}>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Account Actions</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Account Actions</h2>
         <div className="space-y-3">
           <button
+            onClick={() => setShowChangePasswordSidebar(true)}
+            className="btn btn-secondary w-full flex items-center justify-center gap-2"
+          >
+            <Key className="h-4 w-4" />
+            Change Password
+          </button>
+          {/* <button
             onClick={handleLogout}
             className="btn btn-danger w-full flex items-center justify-center gap-2"
           >
             <LogOut className="h-4 w-4" />
             Sign Out
-          </button>
+          </button> */}
         </div>
       </div>
 
@@ -85,6 +95,12 @@ export default function ProfilePage() {
           All data is stored locally and will be reset when the demo ends.
         </p>
       </div> */}
+
+      {/* Change Password Sidebar */}
+      <ChangePasswordSidebar
+        isOpen={showChangePasswordSidebar}
+        onClose={() => setShowChangePasswordSidebar(false)}
+      />
     </div>
   )
 }
