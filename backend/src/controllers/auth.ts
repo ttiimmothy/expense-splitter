@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { UserService } from '../services/users';
 import {prisma} from "@/db/prisma";
 import bcrypt, {compare} from "bcryptjs";
+import jwt from 'jsonwebtoken';
 
 const userService = new UserService();
 
@@ -28,6 +29,21 @@ export const register = async (req: Request, res: Response) => {
     const data = registerSchema.parse(req.body);
     
     const user = await userService.createUser(data);
+    const token = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+
+    // Set HTTP-only cookie
+    res.cookie('accessToken', token, {
+      httpOnly: true,
+      // secure: process.env.NODE_ENV === 'production',
+      secure: true,
+      // sameSite: 'lax',
+      sameSite: 'none',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
     
     res.status(201).json({
       message: 'User created successfully',
