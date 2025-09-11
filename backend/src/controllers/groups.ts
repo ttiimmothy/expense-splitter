@@ -60,8 +60,8 @@ export const getGroupById = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    const { id } = req.params;
-    const group = await groupService.getGroupById(id, req.user.id);
+    const { groupId } = req.params;
+    const group = await groupService.getGroupById(groupId, req.user.id);
     
     res.json({ group });
   } catch (error) {
@@ -79,7 +79,7 @@ export const inviteMultipleMembers = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    const { id: groupId } = req.params;
+    const { groupId } = req.params;
     const data = inviteMembersSchema.parse(req.body);
     
     const invitedMembers = await Promise.all(
@@ -184,4 +184,80 @@ export const deleteGroupMember = async (req: Request, res: Response) => {
     
     res.status(500).json({ error: 'Internal server error' });
   }
+}
+
+export const getGroupExpenses = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { groupId } = req.params;
+    const expenses = await groupService.getGroupExpenses(groupId, req.user.id);
+    res.json({ expenses });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Access denied') {
+      return res.status(403).json({ error: error.message });
+    }
+    
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const changeGroupOwner = async (req: Request, res: Response) => {
+  try {
+    const {groupId, memberId} = req.params
+    const originalOwnerId = req.user.id
+    
+    await prisma.$transaction(async (tx) => {
+      // Update the new member to OWNER
+      await tx.groupMember.update({
+        where: { id: memberId },
+        data: {
+          role: "OWNER"
+        }
+      });
+  
+      // Update the original owner to MEMBER
+      await tx.groupMember.update({
+        where: { userId_groupId: { userId: originalOwnerId, groupId } },
+        data: {
+          role: "MEMBER"
+        }
+      });
+  
+       // Check current number of owners in the group
+       const ownerCount = await tx.groupMember.count({
+        where: {
+          groupId,
+          role: "OWNER"
+        }
+      });
+  
+      // If there's more than 1 owner, don't proceed
+      if (ownerCount > 1) {
+        throw new Error('Too many owners');
+      }
+    });
+  
+    res.json({message: "group owner change success"})
+  } catch (e) {
+    if (e instanceof Error && e.message === "Too many owners") {
+      return res.status(400).json({ error: e.message });
+    }
+    
+    console.error('Change group owner error:', e);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+ 
+}
+
+export const deleteGroup = async (req: Request, res: Response) => {
+  const {groupId} = req.params
+
+  await prisma.group.delete({
+    where: {id: groupId}
+  })
+
+  res.json({message: "group delete success"})
 }

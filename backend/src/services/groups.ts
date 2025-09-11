@@ -62,6 +62,11 @@ export class GroupService {
                 avatarUrl: true
               }
             }
+          },
+          orderBy: {
+            user: {
+              name: "asc"
+            }
           }
         },
         _count: {
@@ -157,4 +162,42 @@ export class GroupService {
       }
     });
   }
+
+
+  async getGroupExpenses(groupId: string, userId: string) {
+    // Verify user is member of group
+    const membership = await prisma.groupMember.findUnique({
+      where: {
+        userId_groupId: {
+          userId,
+          groupId
+        }
+      }
+    });
+
+    if (!membership) {
+      throw new Error('Access denied');
+    }
+
+    return prisma.expense.findMany({
+      where: { groupId },
+      include: {
+        shares: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+  }
 }
+

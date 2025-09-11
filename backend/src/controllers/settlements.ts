@@ -41,7 +41,7 @@ export const createSettlement = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    const { id: groupId } = req.params;
+    const { groupId } = req.params;
     const data = createSettlementSchema.parse(req.body);
     
     const settlement = await settlementService.createSettlement(

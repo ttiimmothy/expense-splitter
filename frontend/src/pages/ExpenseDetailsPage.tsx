@@ -63,7 +63,7 @@ export default function ExpenseDetailsPage() {
   const { data: expense, isLoading, error, refetch } = useQuery({
     queryKey: ['expense', expenseId],
     queryFn: async () => {
-      const response = await api(`/groups/${groupId}/expenses/${expenseId}`)
+      const response = await api(`/expenses/${expenseId}`)
       return response.data as Expense
     },
     enabled: !!groupId && !!expenseId

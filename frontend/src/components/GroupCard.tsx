@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Users, DollarSign, Calendar } from 'lucide-react'
+import { Users, DollarSign, Calendar, Trash2 } from 'lucide-react'
 import dayjs from 'dayjs'
 import {cardDarkMode, cardTextDarkMode} from "@/constants/colors";
 
@@ -26,14 +26,25 @@ interface Group {
 
 interface GroupCardProps {
   group: Group
+  isOwner?: boolean
+  // onDelete?: (groupId: string, groupName: string) => void
 }
 
-export default function GroupCard({ group }: GroupCardProps) {
+export default function GroupCard({ group, isOwner = false }: GroupCardProps) {
+  // const handleDeleteClick = (e: React.MouseEvent) => {
+  //   e.preventDefault() // Prevent navigation to group page
+  //   e.stopPropagation()
+  //   if (onDelete) {
+  //     onDelete(group.id, group.name)
+  //   }
+  // }
+
   return (
-    <Link
-      to={`/groups/${group.id}`}
-      className={`card hover:shadow-md transition-shadow duration-200 ${cardDarkMode}`}
-    >
+    <div className={`card hover:shadow-md transition-shadow duration-200 ${cardDarkMode} relative`}>
+      <Link
+        to={`/groups/${group.id}`}
+        className="block"
+      >
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-1">{group.name}</h3>
@@ -78,9 +89,20 @@ export default function GroupCard({ group }: GroupCardProps) {
         </div>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-200">
-        <span className="text-sm text-primary-600 font-medium">View Details →</span>
-      </div>
-    </Link>
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <span className="text-sm text-primary-600 font-medium">View Details →</span>
+        </div>
+      </Link>
+      
+      {/* {isOwner && onDelete && (
+        <button
+          onClick={handleDeleteClick}
+          className="absolute top-6 right-3 p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+          title={`Delete ${group.name}`}
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      )} */}
+    </div>
   )
 }

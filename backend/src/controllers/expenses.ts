@@ -23,7 +23,7 @@ export const createExpense = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    const { id: groupId } = req.params;
+    const { groupId } = req.params;
 
     const parsedBody = {...req.body, amount: parseFloat(req.body.amount), shares: req.body.shares.map((share) => ({...share, amountPaid: parseFloat(share.amountPaid)}))}
 
@@ -51,24 +51,6 @@ export const createExpense = async (req: Request, res: Response) => {
       if (error.message === 'Custom split requires shares data') {
         return res.status(400).json({ error: error.message });
       }
-    }
-    
-    res.status(500).json({ error: 'Internal server error' });
-  }
-};
-
-export const getGroupExpenses = async (req: Request, res: Response) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ error: 'Not authenticated' });
-    }
-
-    const { id: groupId } = req.params;
-    const expenses = await expenseService.getGroupExpenses(groupId, req.user.id);
-    res.json({ expenses });
-  } catch (error) {
-    if (error instanceof Error && error.message === 'Access denied') {
-      return res.status(403).json({ error: error.message });
     }
     
     res.status(500).json({ error: 'Internal server error' });
@@ -139,7 +121,9 @@ export const deleteExpense = async (req: Request, res: Response) => {
     await prisma.expense.delete({
       where: {id: expenseId}
     })
+    
     io.to(groupId).emit("expense-updated")
+
     res.json({message: "expense delete success"})
   } catch (e) {
     if (e instanceof Error && e.message === 'Access denied') {

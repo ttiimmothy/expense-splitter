@@ -283,7 +283,7 @@ export default function InviteMemberModal({ isOpen, onClose, onSuccess, groupId 
                     <button
                       type="button"
                       onClick={addEmailInput}
-                      className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400 hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                      className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-800 hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-600 transition-colors"
                     >
                       <Plus className="h-4 w-4" />
                       Add another email

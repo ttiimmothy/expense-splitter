@@ -26,7 +26,7 @@ export default function SettlementSuggestions({ suggestions, onSettlementCreated
     mutationFn: async (suggestion: SettlementSuggestion) => {
       // Extract groupId from the current URL or pass it as a prop
       const groupId = window.location.pathname.split('/')[2]
-      const response = await api.post(`/groups/${groupId}/settlements`, {
+      const response = await api.post(`/settlements/${groupId}`, {
         fromUserId: suggestion.fromUserId,
         toUserId: suggestion.toUserId,
         amount: suggestion.amount

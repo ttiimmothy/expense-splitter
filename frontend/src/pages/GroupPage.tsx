@@ -3,7 +3,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useState, useEffect } from 'react'
 import { socketService } from '../lib/socket'
-import { Plus, Users, DollarSign, ArrowLeft, Trash2, AlertTriangle, Crown, UserCheck } from 'lucide-react'
+import { Plus, Users, DollarSign, ArrowLeft, Trash2, AlertTriangle, Crown, UserCheck, Settings } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { toast } from 'react-hot-toast'
@@ -81,10 +81,12 @@ export default function GroupPage() {
   const [showOwnerAssignConfirm, setShowOwnerAssignConfirm] = useState(false)
   const [memberToAssignOwner, setMemberToAssignOwner] = useState<{ id: string; name: string } | null>(null)
   const [isAssigningOwner, setIsAssigningOwner] = useState(false)
+  const [showDeleteGroupConfirm, setShowDeleteGroupConfirm] = useState(false)
+  const [isDeletingGroup, setIsDeletingGroup] = useState(false)
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
 
-  const { data: group, isLoading: groupLoading, refetch } = useQuery({
+  const { data: group, isLoading: groupLoading, refetch: refetchGroupDetails } = useQuery({
     queryKey: ['group', id],
     queryFn: async () => {
       const response = await api(`/groups/${id}`)
@@ -105,7 +107,7 @@ export default function GroupPage() {
   const { data: settlements, isLoading: settlementsLoading, refetch: refetchSettlements } = useQuery({
     queryKey: ['settlements', id],
     queryFn: async () => {
-      const response = await api(`/groups/${id}/settlements`)
+      const response = await api(`/settlements/${id}`)
       return response.data as Settlement[]
     },
     enabled: !!id
@@ -122,7 +124,7 @@ export default function GroupPage() {
       }
 
       const onGroupUpdated = () => {
-        refetch()
+        refetchGroupDetails()
       }
 
       const onSettlementCreated = () => {
@@ -140,7 +142,7 @@ export default function GroupPage() {
         socketService.off('settlement-created', onSettlementCreated)
       }
     }
-  }, [id, refetchExpenses, refetch, refetchSettlements])
+  }, [id, refetchGroupDetails, refetchExpenses, refetchSettlements])
 
   const handleSettlementClick = (settlement: Settlement) => {
     setSelectedSettlement(settlement)
@@ -165,7 +167,7 @@ export default function GroupPage() {
     },
     onSuccess: () => {
       toast.success('Member removed successfully!')
-      refetch()
+      refetchGroupDetails()
       setShowDeleteConfirm(false)
       setMemberToDelete(null)
     },
@@ -199,12 +201,12 @@ export default function GroupPage() {
   // Assign owner mutation
   const assignOwnerMutation = useMutation({
     mutationFn: async (memberId: string) => {
-      const response = await api.put(`/groups/${id}/members/${memberId}/role`, { role: 'OWNER' })
+      const response = await api.put(`/groups/${id}/members/${memberId}/role`)
       return response.data
     },
     onSuccess: () => {
       toast.success('Ownership transferred successfully!')
-      refetch()
+      refetchGroupDetails()
       setShowOwnerAssignConfirm(false)
       setMemberToAssignOwner(null)
     },
@@ -233,6 +235,40 @@ export default function GroupPage() {
   const handleCloseOwnerAssignConfirm = () => {
     setShowOwnerAssignConfirm(false)
     setMemberToAssignOwner(null)
+  }
+
+  // Delete group mutation
+  const deleteGroupMutation = useMutation({
+    mutationFn: async () => {
+      const response = await api.delete(`/groups/${id}`)
+      return response.data
+    },
+    onSuccess: () => {
+      // toast.success('Group deleted successfully!')
+      // Navigate to dashboard after successful deletion
+      window.location.href = '/'
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || 'Failed to delete group'
+      toast.error(errorMessage)
+    }
+  })
+
+  const handleDeleteGroup = () => {
+    setShowDeleteGroupConfirm(true)
+  }
+
+  const confirmDeleteGroup = async () => {
+    setIsDeletingGroup(true)
+    try {
+      await deleteGroupMutation.mutateAsync()
+    } finally {
+      setIsDeletingGroup(false)
+    }
+  }
+
+  const handleCloseDeleteGroupConfirm = () => {
+    setShowDeleteGroupConfirm(false)
   }
 
 
@@ -271,14 +307,26 @@ export default function GroupPage() {
             <p className="text-gray-600 dark:text-gray-400">{group.members.length} members • {group.currency}</p>
           </div>
         </div>
+        {/* {isOwner && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDeleteGroup}
+              className="btn btn-danger flex items-center gap-2"
+              title="Delete this group"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Group
+            </button>
+          </div>
+        )} */}
         <div className="flex gap-2">
-          <button
+          {/* <button
             onClick={() => setShowInviteModal(true)}
             className="btn btn-secondary flex items-center gap-2"
           >
             <Users className="h-4 w-4" />
             Invite
-          </button>
+          </button> */}
           <button
             onClick={() => setShowExpenseForm(true)}
             className="btn btn-primary flex items-center gap-2"
@@ -336,7 +384,7 @@ export default function GroupPage() {
                           <Crown className="h-3 w-3 text-yellow-500" />
                         </span>
                       )}
-                      <span className={`text-xs text-gray-500 ${cardTextDarkMode}`}>{member.role}</span>
+                  <span className={`text-xs text-gray-500 ${cardTextDarkMode}`}>{member.role}</span>
                     </div>
                     {isOwner && member.role !== 'OWNER' && (
                       <div className="flex items-center gap-1">
@@ -390,6 +438,18 @@ export default function GroupPage() {
               </button>
             </div>
           </div>
+          
+          {isOwner && <div className={`card ${cardDarkMode}`}>
+            <h3 className="text-lg font-semibold text-red-700 mb-4">Dangerous Actions</h3>
+            <div className="space-y-2">
+              <button
+                onClick={handleDeleteGroup}
+                className="block w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Delete Group
+              </button>
+            </div>
+          </div>}
         </div>
       </div>
 
@@ -411,8 +471,7 @@ export default function GroupPage() {
         onSuccess={() => {
           setShowInviteModal(false)
           // Refetch group data to update members
-          refetch()
-          // window.location.reload()
+          refetchGroupDetails()
         }}
       />
 
@@ -531,6 +590,65 @@ export default function GroupPage() {
                       <>
                         <Crown className="h-4 w-4" />
                         Transfer Ownership
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Group Confirmation Modal */}
+      {showDeleteGroupConfirm && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4 text-center sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={handleCloseDeleteGroupConfirm} />
+            
+            <div className="relative transform overflow-hidden rounded-lg text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md">
+              <div className={`${cardDarkMode} bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4`}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                    <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Delete Group</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">This action cannot be undone</p>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Are you sure you want to delete the group <span className="font-medium">"{group?.name}"</span>?
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    This will permanently delete all expenses, settlements, and member data associated with this group.
+                  </p>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={handleCloseDeleteGroupConfirm}
+                    className="btn btn-secondary"
+                    disabled={isDeletingGroup}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDeleteGroup}
+                    className="btn btn-danger flex items-center gap-2"
+                    disabled={isDeletingGroup}
+                  >
+                    {isDeletingGroup ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4" />
+                        Delete Group
                       </>
                     )}
                   </button>
