@@ -1,4 +1,4 @@
-import {Expense, ExpenseShare, Prisma, User} from "@prisma/client";
+import {Prisma} from "@prisma/client";
 import { prisma } from '../db/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 
