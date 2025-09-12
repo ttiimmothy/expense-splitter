@@ -6,6 +6,7 @@ export interface Balance {
   userId: string;
   userName: string;
   netBalance: number;
+  // isCurrentMember: boolean;
 }
 
 export interface SettlementSuggestion {
@@ -44,7 +45,6 @@ export class SettlementService {
       where: { groupId },
       orderBy: {
         user: {name: "asc"}
-        
       },
       include: {
         user: {
@@ -53,6 +53,60 @@ export class SettlementService {
             name: true
           }
         }
+      }
+    });
+
+    // Get all users who have been involved in this group's expenses or settlements
+    // (including those who may have left the group)
+    const allInvolvedUsers = await prisma.user.findMany({
+      where: {
+        OR: [
+          // Users who are currently group members
+          {
+            groupMemberships: {
+              some: { groupId }
+            }
+          },
+          // Users who have paid for expenses in this group
+          {
+            expensesPaid: {
+              some: {
+                expense: {
+                  groupId
+                }
+              }
+            }
+          },
+          // Users who have shares in expenses in this group
+          {
+            expenseShares: {
+              some: {
+                expense: {
+                  groupId
+                }
+              }
+            }
+          },
+          // Users who have settlements in this group
+          {
+            OR: [
+              {
+                settlementsFrom: {
+                  some: { groupId }
+                }
+              },
+              {
+                settlementsTo: {
+                  some: { groupId }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      select: {
+        id: true,
+        name: true
       }
     });
 
@@ -84,10 +138,11 @@ export class SettlementService {
     // Calculate net balances
     const balances: Map<string, { name: string; balance: number }> = new Map();
 
-    // Initialize all members with 0 balance
-    members.forEach(member => {
-      balances.set(member.user.id, {
-        name: member.user.name,
+    // Initialize all involved users with 0 balance
+    // This includes current members and users who left but have outstanding balances
+    allInvolvedUsers.forEach(user => {
+      balances.set(user.id, {
+        name: user.name,
         balance: 0
       });
     });
@@ -129,11 +184,14 @@ export class SettlementService {
         if (toB) toB.balance -= amt;
       }
     }
-    // Convert to array format
+    // // Convert to array format and add membership status
+    // const currentMemberIds = new Set(members.map(m => m.user.id));
+    
     return Array.from(balances.entries()).map(([userId, data]) => ({
       userId,
       userName: data.name,
-      netBalance: Math.round(data.balance * 100) / 100
+      netBalance: Math.round(data.balance * 100) / 100,
+      // isCurrentMember: currentMemberIds.has(userId) // Indicates if user is still a group member
     }));
   }
 

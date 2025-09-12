@@ -288,21 +288,20 @@ export default function ExpenseDetailsPage() {
             {expense.payers && expense.payers.length > 0 && (
               <div className="space-y-3">
                 {expense.payers.map((payer, index) => {
-                  const member = group?.members.find(m => m.user.id === payer.user.id)
                   return (
                     <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
                           <span className="text-xs font-medium text-green-600">
-                            {member?.user.name.charAt(0) || '?'}
+                            {payer.user.name.charAt(0) || '?'}
                           </span>
                         </div>
                         <div>
                           <p className="font-medium text-gray-900 dark:text-white">
-                            {member?.user.name || 'Unknown User'}
+                            {payer.user.name || 'Unknown User'}
                           </p>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {member?.user.email || 'No email'}
+                            {payer.user.email || 'No email'}
                           </p>
                         </div>
                       </div>

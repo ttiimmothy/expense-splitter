@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -6,7 +6,7 @@ import { api } from '../lib/api'
 import { toast } from 'react-hot-toast'
 import { X, Save, DollarSign, Users, Check, Plus } from 'lucide-react'
 import { cardDarkMode, cardTextDarkMode } from '@/constants/colors'
-import { createExpenseSchema, type CreateExpenseForm } from '../schemas/expense'
+import { ExpenseForm, expenseSchema } from '../schemas/expense'
 import { truncateEmailExtra } from '../utils/emailUtils'
 
 interface Member {
@@ -59,7 +59,7 @@ interface EditExpenseSidebarProps {
   onSuccess?: () => void
 }
 
-// Using CreateExpenseForm type from schema instead of local interface
+// Using ExpenseForm type from schema instead of local interface
 
 export default function EditExpenseSidebar({
   isOpen,
@@ -71,13 +71,29 @@ export default function EditExpenseSidebar({
 }: EditExpenseSidebarProps) {
   
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [splitType, setSplitType] = useState<'EQUAL' | 'CUSTOM'>('EQUAL')
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set())
   const [payers, setPayers] = useState<Array<{ userId: string; amount: number }>>([])
   const queryClient = useQueryClient()
 
-  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<CreateExpenseForm>({
-    resolver: zodResolver(createExpenseSchema),
+  // Create a combined list of users that includes both current members and users from the expense
+  // This ensures we can still edit expenses even if some users have left the group
+  const allUsers = useMemo(() => {
+    const currentMemberUsers = members.map(member => member.user)
+    const expenseUsers = [
+      ...expense.payers.map(payer => payer.user),
+      ...expense.shares.map(share => share.user)
+    ]
+    
+    // Combine and deduplicate users
+    const userMap = new Map()
+    currentMemberUsers.forEach(user => userMap.set(user.id, user))
+    expenseUsers.forEach(user => userMap.set(user.id, user))
+    
+    return Array.from(userMap.values())
+  }, [members, expense.payers, expense.shares])
+
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<ExpenseForm>({
+    resolver: zodResolver(expenseSchema),
     mode: 'onBlur',
     defaultValues: {
       description: expense.description,
@@ -140,7 +156,6 @@ export default function EditExpenseSidebar({
           amount: Number(payer.amount)
         }))
       })
-      setSplitType(expense.split as 'EQUAL' | 'CUSTOM')
       
       // Initialize selected members from current shares
       const memberIds = new Set(expense.shares.map(share => share.user.id))
@@ -156,7 +171,8 @@ export default function EditExpenseSidebar({
   }, [expense, reset])
 
   const updateExpenseMutation = useMutation({
-    mutationFn: async (data: CreateExpenseForm) => {
+    mutationFn: async (data: ExpenseForm) => {
+      console.log(data)
       const response = await api.put(`/groups/${groupId}/expenses/${expense.id}`, data)
       return response.data
     },
@@ -173,11 +189,11 @@ export default function EditExpenseSidebar({
     }
   })
 
-  const onSubmit = async (data: CreateExpenseForm) => {
+  const onSubmit = async (data: ExpenseForm) => {
     setIsSubmitting(true)
     try {
       // Only include selected members
-      const selectedMembersList = members.filter(member => selectedMembers.has(member.user.id))
+      const selectedMembersList = allUsers.filter(user => selectedMembers.has(user.id))
       
       if (selectedMembersList.length === 0) {
         toast.error('Please select at least one member for the expense')
@@ -201,16 +217,16 @@ export default function EditExpenseSidebar({
       // Calculate shares for equal split
       if (data.split === 'EQUAL' && data.amount && selectedMembersList.length > 0) {
         const amountPerPerson = data.amount / selectedMembersList.length
-        data.shares = selectedMembersList.map(member => ({
-          userId: member.user.id,
+        data.shares = selectedMembersList.map(user => ({
+          userId: user.id,
           amountOwed: amountPerPerson
         }))
       } else if (data.split === 'CUSTOM') {
         // Include all selected members, even if they have $0 amount
-        data.shares = selectedMembersList.map(member => {
-          const existingShare = data.shares.find(share => share.userId === member.user.id)
+        data.shares = selectedMembersList.map(user => {
+          const existingShare = data.shares.find(share => share.userId === user.id)
           return {
-            userId: member.user.id,
+            userId: user.id,
             amountOwed: existingShare ? Number(existingShare.amountOwed) : 0
           }
         })
@@ -252,8 +268,8 @@ export default function EditExpenseSidebar({
   }
 
   const calculateTotal = () => {
-    const selectedMembersList = members.filter(member => selectedMembers.has(member.user.id))
-    const total = selectedMembersList.reduce((sum, member) => sum + Number(getCustomShare(member.user.id)), 0)
+    const selectedMembersList = allUsers.filter(user => selectedMembers.has(user.id))
+    const total = selectedMembersList.reduce((sum, user) => sum + Number(getCustomShare(user.id)), 0)
     return Math.round(total * 100) / 100
   }
 
@@ -278,7 +294,6 @@ export default function EditExpenseSidebar({
         amount: Number(payer.amount)
       }))
     })
-    setSplitType(expense.split as 'EQUAL' | 'CUSTOM')
     
     // Initialize selected members from current shares
     const memberIds = new Set(expense.shares.map(share => share.user.id))
@@ -381,9 +396,9 @@ export default function EditExpenseSidebar({
                             onChange={(e) => updatePayer(index, 'userId', e.target.value)}
                             className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                           >
-                            {members.map((member) => (
-                              <option key={member.user.id} value={member.user.id}>
-                                {member.user.name}
+                            {allUsers.map((user) => (
+                              <option key={user.id} value={user.id}>
+                                {user.name}
                               </option>
                             ))}
                           </select>
@@ -436,17 +451,17 @@ export default function EditExpenseSidebar({
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Include Members ({getSelectedMembersCount()}/{members.length})
+                    Include Members ({getSelectedMembersCount()}/{allUsers.length})
                   </label>
                 </div>
                 <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  {members.map((member) => (
+                  {allUsers.map((user) => (
                     <button
-                      key={member.user.id}
+                      key={user.id}
                       type="button"
-                      onClick={() => handleMemberToggle(member.user.id)}
+                      onClick={() => handleMemberToggle(user.id)}
                       className={`w-full flex items-center gap-3 p-2 rounded-lg border transition-colors ${
-                        selectedMembers.has(member.user.id)
+                        selectedMembers.has(user.id)
                           ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                           : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
@@ -454,21 +469,21 @@ export default function EditExpenseSidebar({
                     >
                       <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-800 flex items-center justify-center">
                         <span className="text-sm font-medium text-primary-600 dark:text-primary-300">
-                          {member.user.name.charAt(0)}
+                          {user.name.charAt(0)}
                         </span>
                       </div>
                       <div className="flex-1 text-left">
                         <p className="font-medium text-gray-900 dark:text-white">
-                          {member.user.name}
+                          {user.name}
                         </p>
                         <p 
                           className={`text-sm text-gray-500 ${cardTextDarkMode}`}
-                          title={member.user.email}
+                          title={user.email}
                         >
-                          {truncateEmailExtra(member.user.email)}
+                          {truncateEmailExtra(user.email)}
                         </p>
                       </div>
-                      {selectedMembers.has(member.user.id) && (
+                      {selectedMembers.has(user.id) && (
                         <div className="h-5 w-5 rounded-full bg-primary-600 flex items-center justify-center">
                           <Check className="h-3 w-3 text-white" />
                         </div>
@@ -487,7 +502,6 @@ export default function EditExpenseSidebar({
                   <button
                     type="button"
                     onClick={() => {
-                      setSplitType('EQUAL')
                       setValue('split', 'EQUAL')
                     }}
                     className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
@@ -507,7 +521,6 @@ export default function EditExpenseSidebar({
                   <button
                     type="button"
                     onClick={() => {
-                      setSplitType('CUSTOM')
                       setValue('split', 'CUSTOM')
                     }}
                     className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
