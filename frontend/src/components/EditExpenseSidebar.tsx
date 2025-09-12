@@ -172,7 +172,6 @@ export default function EditExpenseSidebar({
 
   const updateExpenseMutation = useMutation({
     mutationFn: async (data: ExpenseForm) => {
-      console.log(data)
       const response = await api.put(`/groups/${groupId}/expenses/${expense.id}`, data)
       return response.data
     },
