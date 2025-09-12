@@ -85,8 +85,7 @@ export default function GroupPage() {
   const [showDeleteGroupConfirm, setShowDeleteGroupConfirm] = useState(false)
   const [isDeletingGroup, setIsDeletingGroup] = useState(false)
   const [showEditGroupModal, setShowEditGroupModal] = useState(false)
-  // const [showExitConfirm, setShowExitConfirm] = useState(false)
-  const [isExiting, setIsExiting] = useState(false)
+  const [isLeaving, setIsLeaving] = useState(false)
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
 
@@ -198,8 +197,8 @@ export default function GroupPage() {
     }
   }
 
-  // Exit group mutation
-  const exitGroupMutation = useMutation({
+  // Leave group mutation
+  const leaveGroupMutation = useMutation({
     mutationFn: async () => {
       const response = await api.delete(`/groups/${id}/members/me`)
       return response.data
@@ -218,13 +217,14 @@ export default function GroupPage() {
     }
   })
 
-  const handleExitGroup = async () => {
-    setIsExiting(true)
+  const handleLeaveGroup = async () => {
+    if (!group || !user) return
+    setIsLeaving(true)
     try {
-      await exitGroupMutation.mutateAsync()
+      await leaveGroupMutation.mutateAsync()
     } finally {
-      setIsExiting(false)
-      // setShowExitConfirm(false)
+      setIsLeaving(false)
+      // setShowLeaveConfirm(false)
     }
   }
 
@@ -373,9 +373,9 @@ export default function GroupPage() {
             Add Expense
           </button>
           <button
-            onClick={handleExitGroup}
+            onClick={handleLeaveGroup}
             className="btn btn-danger flex items-center gap-2"
-            disabled={isExiting}
+            disabled={isLeaving}
             title="Leave this group"
           >
             <LogOut className="h-4 w-4" />

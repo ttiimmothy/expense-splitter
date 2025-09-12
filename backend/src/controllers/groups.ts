@@ -276,13 +276,63 @@ export const editGroup = async (req: Request, res: Response) => {
   res.json({message: "group update success"})
 }
 
-export const exitGroup = async (req: Request, res: Response) => {
+export const leaveGroup = async (req: Request, res: Response) => {
   const userId = req.user.id
   const {groupId} = req.params
-  await prisma.groupMember.delete({
-    where: {userId_groupId: {userId, groupId}} 
-  })
-  io.to(`group-${groupId}`).emit("group-updated")
+  
+  try {
+    // First, get the current user's membership details
+    const currentMember = await prisma.groupMember.findUnique({
+      where: { userId_groupId: { userId, groupId } },
+      include: { user: true }
+    })
 
-  res.json({message: "exit group success"})
+    if (!currentMember) {
+      return res.status(404).json({ error: 'You are not a member of this group' })
+    }
+
+    // Get all group members to check if user is owner and count total members
+    const allMembers = await prisma.groupMember.findMany({
+      where: { groupId },
+      include: { user: true }
+    })
+
+    const isOwner = currentMember.role === 'OWNER'
+    const memberCount = allMembers.length
+
+    // If user is owner and there are more than 1 members, assign a random new owner
+    if (isOwner && memberCount > 1) {
+      // Get all other members (excluding the current user)
+      const otherMembers = allMembers.filter(member => member.userId !== userId)
+      
+      // Randomly select a new owner
+      const randomIndex = Math.floor(Math.random() * otherMembers.length)
+      const newOwner = otherMembers[randomIndex]
+
+      // Use transaction to ensure atomicity
+      await prisma.$transaction(async (tx) => {
+        // Update the randomly selected member to be the new owner
+        await tx.groupMember.update({
+          where: { id: newOwner.id },
+          data: { role: 'OWNER' }
+        })
+
+        // Remove the current user from the group
+        await tx.groupMember.delete({
+          where: { userId_groupId: { userId, groupId } }
+        })
+      })
+    } else {
+      // Regular leave (not owner or only member left)
+      await prisma.groupMember.delete({
+        where: { userId_groupId: { userId, groupId } }
+      })
+    }
+
+    io.to(`group-${groupId}`).emit("group-updated")
+    res.json({ message: "exit group success" })
+  } catch (error) {
+    console.error('Leave group error:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
 }

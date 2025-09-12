@@ -13,7 +13,7 @@ import {
   changeGroupOwner,
   deleteGroup,
   editGroup,
-  exitGroup
+  leaveGroup
 } from "./controllers/groups";
 import {createExpense, deleteExpense, editExpense, getExpense, updateExpenseShare} from "./controllers/expenses";
 import {createSettlement, getGroupBalances, getGroupSettlements} from "./controllers/settlements";
@@ -36,7 +36,7 @@ router.get('/groups', requireAuth, getUserGroups);
 router.get('/groups/:groupId', requireAuth, getGroupById);
 router.put('/groups/:groupId', requireAuth, editGroup);
 router.post('/groups/:groupId/invite', requireAuth, inviteMultipleMembers);
-router.delete("/groups/:groupId/members/me", requireAuth, exitGroup)
+router.delete("/groups/:groupId/members/me", requireAuth, leaveGroup)
 
 // Group routes (auth and group owner required)
 router.delete('/groups/:groupId', requireAuth, requireGroupOwner, deleteGroup);
@@ -50,11 +50,11 @@ router.get('/groups/:groupId/expenses', requireAuth, getGroupExpenses);
 
 // Expense routes (auth required)
 router.post('/groups/:groupId/expenses', requireAuth, createExpense);
-router.get('/expenses/:expenseId', requireAuth, getExpense);
 router.put("/groups/:groupId/expenses/:expenseId/split", requireAuth, updateExpenseShare)
 router.put("/groups/:groupId/expenses/:expenseId", requireAuth, editExpense)
 router.delete("/groups/:groupId/expenses/:expenseId", requireAuth, deleteExpense)
 
+router.get('/expenses/:expenseId', requireAuth, getExpense);
 
 // Settlement routes (auth required)
 router.get('/balances/:groupId', requireAuth, getGroupBalances);
