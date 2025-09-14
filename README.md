@@ -12,6 +12,8 @@ A full-stack application for splitting expenses with friends and family. Built w
 - 💸 **Settlement Suggestions**: Minimize transactions with smart settlement recommendations
 - 🔄 **Real-time Updates**: Live updates using Socket.IO
 - 🌙 **Dark Mode**: Toggle between light and dark themes
+- 📱 **Responsive Design**: Works seamlessly on desktop and mobile
+- 🔐 **Secure Authentication**: JWT-based authentication with password hashing
 
 ## Tech Stack
 
