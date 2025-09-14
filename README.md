@@ -71,7 +71,7 @@ cd frontend
 npm install
 cp .
 # Edit .env with your API URL
-npm run dev
+npm run start
 ```
 
 #### 4. Access the application
