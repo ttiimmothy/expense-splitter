@@ -195,6 +195,8 @@ npm run prisma:seed
 
 ### Build and run with Docker Compose
 ```bash
+cd backend
+
 # Build all services
 docker compose build
 
