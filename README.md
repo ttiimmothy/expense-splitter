@@ -121,8 +121,7 @@ expense_splitter/
 │   ├── vite.config.ts
 │   └── vercel.json           # Deployment config (if used)
 ├── LICENSE
-├── README.md
-└── spec.txt
+└── README.md
 ```
 
 ## API Endpoints
