@@ -37,9 +37,9 @@ A full-stack application for splitting expenses with friends and family. Built w
 - **Vitest** for testing
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 22+
 - Docker and Docker Compose
-- Git
+- PostgreSQL 17+ (if not using Docker)
 
 ### 1. Clone the repository
 ```bash
