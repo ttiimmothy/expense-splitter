@@ -40,6 +40,7 @@ A full-stack application for splitting expenses with friends and family. Built w
 - Node.js 22+
 - Docker and Docker Compose
 - PostgreSQL 17+ (if not using Docker)
+- Git
 
 ### 1. Clone the repository
 ```bash
