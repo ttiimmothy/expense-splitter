@@ -17,8 +17,9 @@ const server = createServer(app);
 // Initialize Socket.IO
 export const io = initializeSocketIO(server);
 
+// now using import {io} in the controllers directly
 // Make io available globally for controllers
-app.set('io', io);
+// app.set('io', io);
 
 // Security middleware
 app.use(helmet());
