@@ -44,7 +44,7 @@ A full-stack application for splitting expenses with friends and family. Built w
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com:ttiimmothy/expense-splitter.git
+git clone https://github.com/ttiimmothy/expense-splitter
 cd expense-splitter
 ```
 
